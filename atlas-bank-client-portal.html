@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Atlas Bank Client Portal - View-only customer access.">
+<title>Atlas Bank - Client Portal</title>
+<style>
+:root{--bg:#070e18;--bg2:#0b1424;--panel:#0f1d31;--line:rgba(156,175,201,.2);--text:#edf4ff;--muted:#8a9fc0;--accent:#67e8b5;--primary:#58b7ff;--danger:#ff6b86;--radius:14px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
+.hidden{display:none!important}.wrap{max-width:1200px;margin:0 auto;padding:18px}
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse at 20% 50%,rgba(88,183,255,.08),transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(103,232,181,.06),transparent 50%),var(--bg)}
+.login-card{width:100%;max-width:420px;padding:40px;border-radius:20px;border:1px solid var(--line);background:linear-gradient(180deg,var(--panel),var(--bg2))}
+.brand-mark{width:56px;height:56px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(135deg,var(--primary),var(--accent));color:#041024;font-weight:900;font-size:1.3rem;margin-bottom:24px}
+.subtitle{color:var(--muted);font-size:.88rem;margin-bottom:22px}
+.form-group{margin-bottom:12px}.form-group label{display:block;font-size:.82rem;color:var(--muted);margin-bottom:6px}
+input,select{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:#081427;color:var(--text)}
+button{padding:10px 14px;border-radius:10px;border:0;background:#1d4ed8;color:#fff;cursor:pointer}
+button.secondary{background:#334155}.login-btn{width:100%;padding:13px;border-radius:12px;font-weight:700;color:#041024;background:linear-gradient(135deg,var(--accent),#a9ffe1)}
+.err{color:var(--danger);font-size:.86rem;min-height:18px}.ok{color:var(--accent);font-size:.86rem;min-height:18px}
+.portal{display:none}.portal.active{display:block}
+.head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+.grid{display:grid;gap:12px}.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;font-size:.88rem}
+.title{margin:0 0 10px}.muted{color:var(--muted)}.pill{display:inline-block;padding:3px 8px;border-radius:999px;font-size:.76rem;background:#15324f;color:#b9d9ff}
+.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.modal-overlay{position:fixed;inset:0;background:rgba(3,8,18,.78);display:none;align-items:center;justify-content:center;padding:12px;z-index:1000}
+.modal-overlay.show{display:flex}.modal{width:100%;max-width:460px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+</style>
+</head>
+<body>
+<section id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <div class="brand-mark">A</div>
+    <h1 style="margin:0 0 5px">Client Portal</h1>
+    <p class="subtitle">Enterprise view-only access to your account data and statements.</p>
+    <form id="loginForm">
+      <div class="form-group"><label>Username</label><input id="username" autocomplete="username" required></div>
+      <div class="form-group"><label>Password</label><input id="password" type="password" autocomplete="current-password" required></div>
+      <button id="loginBtn" class="login-btn" type="submit">Sign In Securely</button>
+      <div id="loginError" class="err"></div>
+    </form>
+  </div>
+</section>
+
+<main id="portal" class="portal wrap">
+  <div class="head" style="margin-bottom:12px">
+    <h2 id="welcome" class="title" style="margin:0">Welcome</h2>
+    <div class="actions">
+      <span id="sessionInfo" class="muted"></span>
+      <button id="refreshBtn" class="secondary" type="button">Refresh</button>
+      <button id="logoutBtn" class="secondary" type="button">Logout</button>
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card"><h3 class="title">Profile</h3><div id="profile" class="muted">-</div></div>
+    <div class="card">
+      <h3 class="title">Security</h3>
+      <div id="securityInfo" class="muted" style="margin-bottom:10px">-</div>
+      <div class="actions">
+        <button id="openPwdBtn" type="button">Change Password</button>
+        <button id="openDevicesBtn" type="button" class="secondary">Trusted Devices</button>
+      </div>
+      <div id="securityMsg" class="ok"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <h3 class="title">Accounts</h3>
+    <div class="actions" style="margin-bottom:10px">
+      <label class="muted">From <input id="stmtFrom" type="date"></label>
+      <label class="muted">To <input id="stmtTo" type="date"></label>
+    </div>
+    <table><thead><tr><th>Account</th><th>Product</th><th>Status</th><th>Ledger</th><th>Available</th><th>Statement</th></tr></thead><tbody id="accountsBody"></tbody></table>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <h3 class="title">Recent Transactions</h3>
+    <table><thead><tr><th>Date</th><th>Ref</th><th>Type</th><th>Status</th><th>Amount</th></tr></thead><tbody id="txBody"></tbody></table>
+  </div>
+
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h3 class="title">Loans</h3><div id="loansBox" class="muted">-</div></div>
+    <div class="card"><h3 class="title">Documents</h3><div id="docsBox" class="muted">-</div></div>
+  </div>
+</main>
+
+<div class="modal-overlay" id="mfaModal"><div class="modal">
+  <h3 class="title">Verify MFA</h3>
+  <p class="muted">Enter your 6-digit authenticator code.</p>
+  <div class="form-group"><label>Code</label><input id="mfaCode" maxlength="6" inputmode="numeric"></div>
+  <div class="form-group"><label><input id="trustDevice" type="checkbox" style="width:auto"> Trust this device for 90 days</label></div>
+  <div class="form-group"><label>Device label</label><input id="deviceLabel" placeholder="My Laptop"></div>
+  <div id="mfaError" class="err"></div>
+  <div class="actions"><button id="mfaVerifyBtn" type="button">Verify</button><button id="mfaCancelBtn" class="secondary" type="button">Cancel</button></div>
+</div></div>
+
+<div class="modal-overlay" id="consentModal"><div class="modal">
+  <h3 class="title">Terms & Privacy Consent</h3>
+  <p class="muted" id="consentVersions"></p>
+  <div class="form-group"><label><input id="consentCheck" type="checkbox" style="width:auto"> I accept the latest terms and privacy policy.</label></div>
+  <div id="consentError" class="err"></div>
+  <div class="actions"><button id="consentBtn" type="button">Accept & Continue</button></div>
+</div></div>
+
+<div class="modal-overlay" id="pwdModal"><div class="modal">
+  <h3 class="title">Change Password</h3>
+  <div class="form-group"><label>Current Password</label><input id="pwdCurrent" type="password"></div>
+  <div class="form-group"><label>New Password</label><input id="pwdNew" type="password"></div>
+  <div id="pwdError" class="err"></div>
+  <div class="actions"><button id="pwdSaveBtn" type="button">Save</button><button id="pwdCloseBtn" class="secondary" type="button">Close</button></div>
+</div></div>
+
+<div class="modal-overlay" id="devicesModal"><div class="modal">
+  <h3 class="title">Trusted Devices</h3>
+  <div id="devicesList" class="muted"></div>
+  <div id="devicesError" class="err"></div>
+  <div class="actions"><button id="devicesCloseBtn" class="secondary" type="button">Close</button></div>
+</div></div>
+
+<script>
+const API_BASE = "/atlas-bank-backend/api/";
+const S = { mfaPendingToken: "", consent: null, profile: null, csrfToken: null };
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (m) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+const money = (v) => Number(v || 0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) + " XAF";
+const dt = (s) => s ? new Date(s).toLocaleString() : "-";
+
+function showModal(id, show) { const m=$(id); if (!m) return; m.classList[show ? "add" : "remove"]("show"); }
+function pwdPromptKey(customerId) { return "atlas_client_pwd_prompt_dismissed_" + String(customerId || "0"); }
+async function fetchClientCsrfToken(force = false) {
+  if (!force && S.csrfToken) return S.csrfToken;
+  const res = await fetch(API_BASE + "auth?force_csrf=1", {
+    method: "GET",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" }
+  });
+  const json = await res.json().catch(() => ({}));
+  const token = json?.data?.csrf_token || json?.csrf_token || null;
+  if (token) S.csrfToken = token;
+  return S.csrfToken;
+}
+async function req(path, opts = {}, _retriedForCsrf = false) {
+  const method = String(opts.method || "GET").toUpperCase();
+  const headers = { "Content-Type":"application/json", ...(opts.headers || {}) };
+  if (["POST","PUT","PATCH","DELETE"].includes(method) && !headers["X-CSRF-Token"]) {
+    const t = await fetchClientCsrfToken(false);
+    if (t) headers["X-CSRF-Token"] = t;
+  }
+  const res = await fetch(API_BASE + path, { credentials: "include", ...opts, method, headers });
+  const rotated = res.headers.get("X-CSRF-Token");
+  if (rotated) S.csrfToken = rotated;
+  const json = await res.json().catch(() => ({}));
+  const errMsg = json.error || json.message || "";
+  if (
+    !_retriedForCsrf &&
+    res.status === 403 &&
+    /csrf token/i.test(String(errMsg))
+  ) {
+    await fetchClientCsrfToken(true);
+    return req(path, opts, true);
+  }
+  if (!res.ok || json.success === false) throw new Error(json.error || json.message || ("Request failed: " + res.status));
+  return json.data ?? json;
+}
+
+async function checkSession() {
+  try {
+    const auth = await req("client-auth");
+    if (!auth.authenticated) throw new Error("Not authenticated");
+    S.profile = auth;
+    $("loginScreen").classList.add("hidden");
+    $("portal").classList.add("active");
+    $("portal").classList.remove("hidden");
+    if (auth.consent_required && auth.consent) {
+      S.consent = auth.consent;
+      $("consentVersions").textContent = "Terms version: " + auth.consent.terms_version + " | Privacy version: " + auth.consent.privacy_version;
+      showModal("consentModal", true);
+    }
+    if (auth.requires_password_change) {
+      const dismissed = sessionStorage.getItem(pwdPromptKey(auth.customer_id)) === "1";
+      if (!dismissed) {
+        showModal("pwdModal", true);
+        $("pwdError").textContent = "For security, please change your initial password now.";
+        sessionStorage.setItem(pwdPromptKey(auth.customer_id), "1");
+      }
+    }
+    await loadPortal();
+    return;
+  } catch (_) {
+    $("loginScreen").classList.remove("hidden");
+    $("portal").classList.remove("active");
+    $("portal").classList.add("hidden");
+  }
+}
+
+async function login(ev) {
+  ev.preventDefault();
+  $("loginError").textContent = "";
+  $("loginBtn").disabled = true;
+  try {
+    const data = await req("client-auth", { method:"POST", body:JSON.stringify({ username:$("username").value.trim(), password:$("password").value }) });
+    $("password").value = "";
+    if (data.mfa_required && data.mfa_pending_token) {
+      S.mfaPendingToken = data.mfa_pending_token;
+      showModal("mfaModal", true);
+      return;
+    }
+    await checkSession();
+  } catch (e) {
+    $("loginError").textContent = e.message || "Login failed.";
+  } finally {
+    $("loginBtn").disabled = false;
+  }
+}
+
+async function verifyMfa() {
+  $("mfaError").textContent = "";
+  try {
+    await req("client-auth/verify-mfa", {
+      method:"POST",
+      body:JSON.stringify({
+        mfa_pending_token: S.mfaPendingToken,
+        code: $("mfaCode").value.trim(),
+        trust_device: $("trustDevice").checked,
+        device_label: $("deviceLabel").value.trim()
+      })
+    });
+    S.mfaPendingToken = "";
+    $("mfaCode").value = "";
+    showModal("mfaModal", false);
+    await checkSession();
+  } catch (e) {
+    $("mfaError").textContent = e.message || "MFA verification failed.";
+  }
+}
+
+async function acceptConsent() {
+  $("consentError").textContent = "";
+  if (!$("consentCheck").checked) {
+    $("consentError").textContent = "You must accept to continue.";
+    return;
+  }
+  try {
+    await req("client-auth/accept-consent", {
+      method:"POST",
+      body:JSON.stringify({
+        accepted: true,
+        terms_version: S.consent?.terms_version || "",
+        privacy_version: S.consent?.privacy_version || ""
+      })
+    });
+    showModal("consentModal", false);
+  } catch (e) {
+    $("consentError").textContent = e.message || "Consent submission failed.";
+  }
+}
+
+async function changePassword() {
+  $("pwdError").textContent = "";
+  try {
+    await req("client-auth/change-password", {
+      method:"POST",
+      body:JSON.stringify({
+        current_password: $("pwdCurrent").value,
+        new_password: $("pwdNew").value
+      })
+    });
+    $("pwdCurrent").value = "";
+    $("pwdNew").value = "";
+    $("securityMsg").textContent = "Password updated successfully.";
+    if (S.profile?.customer_id) sessionStorage.removeItem(pwdPromptKey(S.profile.customer_id));
+    showModal("pwdModal", false);
+    await checkSession();
+  } catch (e) {
+    $("pwdError").textContent = e.message || "Password change failed.";
+  }
+}
+
+async function loadTrustedDevices() {
+  $("devicesError").textContent = "";
+  try {
+    const data = await req("client-auth/trusted-devices");
+    const rows = data.devices || [];
+    if (!rows.length) {
+      $("devicesList").innerHTML = "No trusted devices.";
+      return;
+    }
+    $("devicesList").innerHTML = rows.map((d) =>
+      "<div style='border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:8px'>" +
+      "<div><strong>" + esc(d.label || ("Device #" + d.id)) + "</strong> <span class='pill'>" + (d.is_active ? "ACTIVE" : "REVOKED") + "</span></div>" +
+      "<div class='muted'>Trusted: " + dt(d.trusted_at) + " | Last seen: " + dt(d.last_seen) + " | Expires: " + dt(d.expires_at) + "</div>" +
+      (d.is_active ? "<button data-revoke-device='" + Number(d.id) + "' type='button' style='margin-top:6px'>Revoke</button>" : "") +
+      "</div>"
+    ).join("");
+  } catch (e) {
+    $("devicesError").textContent = e.message || "Failed to load devices.";
+  }
+}
+
+async function revokeDevice(id) {
+  try {
+    await req("client-auth/trusted-devices", { method:"PUT", body:JSON.stringify({ device_id: id }) });
+    await loadTrustedDevices();
+  } catch (e) {
+    $("devicesError").textContent = e.message || "Revoke failed.";
+  }
+}
+
+async function signAndDownloadStatement(accountNumber, accountId) {
+  const fromDate = $("stmtFrom").value || "";
+  const toDate = $("stmtTo").value || "";
+  try {
+    const r = await req("client-statements/sign", {
+      method: "POST",
+      body: JSON.stringify({
+        account_id: Number(accountId || 0),
+        account_number: accountNumber,
+        from_date: fromDate,
+        to_date: toDate
+      })
+    });
+    if (!r.signed_url) throw new Error("Signed URL missing.");
+    const downloadRes = await fetch(r.signed_url, {
+      method: "GET",
+      credentials: "include",
+      headers: S.csrfToken ? { "X-CSRF-Token": S.csrfToken } : {}
+    });
+    if (!downloadRes.ok) {
+      const txt = await downloadRes.text().catch(() => "");
+      throw new Error(txt || ("Download failed: " + downloadRes.status));
+    }
+    const blob = await downloadRes.blob();
+    const url = URL.createObjectURL(blob);
+    const safeAcc = String(accountNumber || "account").replace(/[^A-Za-z0-9_-]/g, "_");
+    const cd = downloadRes.headers.get("Content-Disposition") || "";
+    const match = cd.match(/filename="?([^"]+)"?/i);
+    const fallback = "statement-" + safeAcc + "-" + new Date().toISOString().slice(0,10) + ".pdf";
+    const filename = (match && match[1]) ? match[1] : fallback;
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert(e.message || "Failed to issue signed statement URL.");
+  }
+}
+
+async function loadPortal() {
+  const d = await req("client-portal");
+  $("welcome").textContent = "Welcome, " + (d.customer?.full_name || "Client");
+  $("sessionInfo").textContent = "Session expires: " + dt(d.session_expires_at);
+  $("profile").innerHTML = [
+    "Customer Number: " + esc(d.customer?.customer_number || "-"),
+    "Type: " + esc(d.customer?.customer_type || "-"),
+    "Status: " + esc(d.customer?.status || "-"),
+    "Branch: " + esc(d.customer?.branch || "-"),
+    "Phone: " + esc(d.customer?.phone || "-"),
+    "Email: " + esc(d.customer?.email || "-")
+  ].map((x) => "<div>" + x + "</div>").join("");
+  $("securityInfo").innerHTML = [
+    "Username: " + esc(S.profile?.username || "-"),
+    "MFA: " + (S.profile?.mfa_required ? "Enabled" : "Optional"),
+    "Password Change Required: " + (S.profile?.requires_password_change ? "Yes" : "No")
+  ].map((x) => "<div>" + x + "</div>").join("");
+
+  $("accountsBody").innerHTML = (d.accounts || []).map((a) =>
+    "<tr><td>" + esc(a.account_number) + "</td><td>" + esc(a.product_type || "-") + "</td><td>" + esc(a.status || "-") + "</td><td>" + money(a.ledger_balance) + "</td><td>" + money(a.available_balance) + "</td>" +
+    "<td><button data-stmt-account='" + esc(a.account_number) + "' data-stmt-account-id='" + Number(a.id || 0) + "' type='button'>Signed PDF</button></td></tr>"
+  ).join("") || "<tr><td colspan='6' class='muted'>No accounts found.</td></tr>";
+
+  $("txBody").innerHTML = (d.transactions || []).map((t) =>
+    "<tr><td>" + dt(t.created_at) + "</td><td>" + esc(t.ref || "-") + "</td><td>" + esc(t.type || "-") + "</td><td>" + esc(t.status || "-") + "</td><td>" + money(t.amount) + "</td></tr>"
+  ).join("") || "<tr><td colspan='5' class='muted'>No transactions found.</td></tr>";
+
+  $("loansBox").innerHTML = (d.loans || []).length
+    ? (d.loans || []).map((l) => "<div style='margin-bottom:8px'>#" + esc(l.loan_number || "-") + " | " + esc(l.status || "-") + " | Outstanding: " + money(l.outstanding) + "</div>").join("")
+    : "No loans found.";
+  $("docsBox").innerHTML = (d.documents || []).length
+    ? (d.documents || []).map((x) => "<div style='margin-bottom:8px'>" + esc(x.document_number || "-") + " | " + esc(x.type || "-") + " | " + dt(x.generated_at) + "</div>").join("")
+    : "No generated documents found.";
+}
+
+async function logout() {
+  try { await req("client-auth", { method:"DELETE" }); } catch (_) {}
+  showModal("mfaModal", false);
+  showModal("consentModal", false);
+  showModal("pwdModal", false);
+  showModal("devicesModal", false);
+  await checkSession();
+}
+
+$("loginForm").addEventListener("submit", login);
+$("mfaVerifyBtn").addEventListener("click", verifyMfa);
+$("mfaCancelBtn").addEventListener("click", () => { showModal("mfaModal", false); S.mfaPendingToken = ""; });
+$("consentBtn").addEventListener("click", acceptConsent);
+$("pwdSaveBtn").addEventListener("click", changePassword);
+$("pwdCloseBtn").addEventListener("click", () => {
+  if (S.profile?.customer_id) sessionStorage.setItem(pwdPromptKey(S.profile.customer_id), "1");
+  showModal("pwdModal", false);
+});
+$("openPwdBtn").addEventListener("click", () => showModal("pwdModal", true));
+$("openDevicesBtn").addEventListener("click", async () => { showModal("devicesModal", true); await loadTrustedDevices(); });
+$("devicesCloseBtn").addEventListener("click", () => showModal("devicesModal", false));
+$("logoutBtn").addEventListener("click", logout);
+$("refreshBtn").addEventListener("click", loadPortal);
+
+document.addEventListener("click", (e) => {
+  const stmtBtn = e.target.closest("[data-stmt-account]");
+  if (stmtBtn) {
+    signAndDownloadStatement(
+      stmtBtn.getAttribute("data-stmt-account") || "",
+      stmtBtn.getAttribute("data-stmt-account-id") || "0"
+    );
+    return;
+  }
+  const revBtn = e.target.closest("[data-revoke-device]");
+  if (revBtn) {
+    revokeDevice(Number(revBtn.getAttribute("data-revoke-device") || 0));
+  }
+});
+
+checkSession();
+</script>
+</body>
+</html>

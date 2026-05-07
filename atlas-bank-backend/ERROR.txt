@@ -1,0 +1,752 @@
+atlas-bank-enterprise-console-v10.html:7257 [Schedule] Synced 12 entries for loan LN-2026-013
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/transactions 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/transactions → 500: Failed to create transaction: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'TXN-20260407-0001' for key 'ref'
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/reports 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/reports → 500: Internal error: successMessage(): Argument #2 ($code) must be of type int, array given, called in C:\xampp\htdocs\atlas-bank-backend\api\reports.php on line 207
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:7257 [Schedule] Synced 12 entries for loan LN-2026-013
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/transactions 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/transactions → 500: Failed to create transaction: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'TXN-20260407-0001' for key 'ref'
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/reports 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/reports → 500: Internal error: successMessage(): Argument #2 ($code) must be of type int, array given, called in C:\xampp\htdocs\atlas-bank-backend\api\reports.php on line 207
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:7257 [Schedule] Synced 12 entries for loan LN-2026-013
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/transactions 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/transactions → 500: Failed to create transaction: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'TXN-20260407-0001' for key 'ref'
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/reports 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/reports → 500: Internal error: successMessage(): Argument #2 ($code) must be of type int, array given, called in C:\xampp\htdocs\atlas-bank-backend\api\reports.php on line 207
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:7257 [Schedule] Synced 12 entries for loan LN-2026-013
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/transactions 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/transactions → 500: Failed to create transaction: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'TXN-20260407-0001' for key 'ref'
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/reports 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/reports → 500: Internal error: successMessage(): Argument #2 ($code) must be of type int, array given, called in C:\xampp\htdocs\atlas-bank-backend\api\reports.php on line 207
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:7257 [Schedule] Synced 12 entries for loan LN-2026-013
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/transactions 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/transactions → 500: Failed to create transaction: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'TXN-20260407-0001' for key 'ref'
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/reports 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/reports → 500: Internal error: successMessage(): Argument #2 ($code) must be of type int, array given, called in C:\xampp\htdocs\atlas-bank-backend\api\reports.php on line 207
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:7257 [Schedule] Synced 12 entries for loan LN-2026-013
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/transactions 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/transactions → 500: Failed to create transaction: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'TXN-20260407-0001' for key 'ref'
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/reports 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/reports → 500: Internal error: successMessage(): Argument #2 ($code) must be of type int, array given, called in C:\xampp\htdocs\atlas-bank-backend\api\reports.php on line 207
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:7257 [Schedule] Synced 12 entries for loan LN-2026-013
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/transactions 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/transactions → 500: Failed to create transaction: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'TXN-20260407-0001' for key 'ref'
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/reports 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/reports → 500: Internal error: successMessage(): Argument #2 ($code) must be of type int, array given, called in C:\xampp\htdocs\atlas-bank-backend\api\reports.php on line 207
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:7257 [Schedule] Synced 12 entries for loan LN-2026-013
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/transactions 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/transactions → 500: Failed to create transaction: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'TXN-20260407-0001' for key 'ref'
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/reports 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/reports → 500: Internal error: successMessage(): Argument #2 ($code) must be of type int, array given, called in C:\xampp\htdocs\atlas-bank-backend\api\reports.php on line 207
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:7257 [Schedule] Synced 12 entries for loan LN-2026-013
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/transactions 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/transactions → 500: Failed to create transaction: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'TXN-20260407-0001' for key 'ref'
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/reports 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/reports → 500: Internal error: successMessage(): Argument #2 ($code) must be of type int, array given, called in C:\xampp\htdocs\atlas-bank-backend\api\reports.php on line 207
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:7257 [Schedule] Synced 12 entries for loan LN-2026-013
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/transactions 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/transactions → 500: Failed to create transaction: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'TXN-20260407-0001' for key 'ref'
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/reports 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/reports → 500: Internal error: successMessage(): Argument #2 ($code) must be of type int, array given, called in C:\xampp\htdocs\atlas-bank-backend\api\reports.php on line 207
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:7257 [Schedule] Synced 12 entries for loan LN-2026-013
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/transactions 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/transactions → 500: Failed to create transaction: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'TXN-20260407-0001' for key 'ref'
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/reports 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/reports → 500: Internal error: successMessage(): Argument #2 ($code) must be of type int, array given, called in C:\xampp\htdocs\atlas-bank-backend\api\reports.php on line 207
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:7257 [Schedule] Synced 12 entries for loan LN-2026-013
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/transactions 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/transactions → 500: Failed to create transaction: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'TXN-20260407-0001' for key 'ref'
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:2045
+Promise.then
+syncTransactionToBackend @ atlas-bank-enterprise-console-v10.html:2044
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7871
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:1987  POST http://localhost/atlas-bank-backend/api/reports 500 (Internal Server Error)
+request @ atlas-bank-enterprise-console-v10.html:1987
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216
+atlas-bank-enterprise-console-v10.html:2013 [API] POST /atlas-bank-backend/api/reports → 500: Internal error: successMessage(): Argument #2 ($code) must be of type int, array given, called in C:\xampp\htdocs\atlas-bank-backend\api\reports.php on line 207
+request @ atlas-bank-enterprise-console-v10.html:2013
+await in request
+post @ atlas-bank-enterprise-console-v10.html:2027
+(anonymous) @ atlas-bank-enterprise-console-v10.html:8039
+Promise.then
+recordProfitEntry @ atlas-bank-enterprise-console-v10.html:8038
+autoDeductFromAccount @ atlas-bank-enterprise-console-v10.html:7875
+await in autoDeductFromAccount
+processAutoRepayments @ atlas-bank-enterprise-console-v10.html:7949
+await in processAutoRepayments
+completeLogin @ atlas-bank-enterprise-console-v10.html:2634
+await in completeLogin
+restoreSession @ atlas-bank-enterprise-console-v10.html:10204
+await in restoreSession
+(anonymous) @ atlas-bank-enterprise-console-v10.html:10216

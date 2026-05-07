@@ -1,0 +1,5 @@
+see i need you to just deeply check my dashboard panel including all sub tabs in it micrscopically code for code, line by line, block by block, logic by logic with you most advanced debug tool, thinking as a senior engineer, a senior finakcial auditor , a senior banking systems and economic engineer, ensuring there is not even a single inconsuistency in coding, financial logic and calculations and naming and flow. ensure it meets enteprise grade ensuring to preserve my stsyem 100% while incoporating the fix. ensure every card and infography and link and backend logic is fully ok taking intoconcideration branches and permissuions for different roles and all financial calculations on the differentb cards and displays are all consistent. ensure everything is perfect in every best practice
+
+
+
+, checking for the same class of bugs found in the Internal Audit panel (KPI card vs register inconsistencies, stale data, branch filtering mismatches, status count mismatches), in my branch management panel

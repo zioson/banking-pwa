@@ -1,0 +1,123 @@
+# ============================================================
+# Atlas Bank Enterprise Operations Console
+# Apache .htaccess - URL Rewriting
+# ============================================================
+
+# Enable rewrite engine
+RewriteEngine On
+
+# -----------------------------------------------------------
+# CRITICAL FIX: Pass Authorization header to PHP
+# Apache/mod_php silently strips Authorization headers by default.
+# Without this, all API requests after login fail with 401.
+# CGIPassAuth works on Apache 2.4.13+, SetEnvIf covers older versions.
+# -----------------------------------------------------------
+<IfModule mod_authz_core.c>
+    CGIPassAuth On
+</IfModule>
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# Route all /api/* requests through router.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^api/(.*)$ router.php [QSA,L]
+
+# -----------------------------------------------------------
+# Security Headers
+# -----------------------------------------------------------
+<IfModule mod_headers.c>
+    # Prevent clickjacking — MUST match router.php DENY policy
+    Header always set X-Frame-Options "DENY"
+
+    # Prevent MIME type sniffing
+    Header always set X-Content-Type-Options "nosniff"
+
+    # XSS Protection
+    Header always set X-XSS-Protection "1; mode=block"
+
+    # Pass Authorization header to PHP (belt-and-suspenders)
+    SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Content Security Policy (relaxed for API)
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'none'; style-src 'none'; img-src 'self' data:; font-src 'none'; connect-src 'self'; frame-ancestors 'none';"
+
+    # HSTS (enable in production with appropriate max-age)
+    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+</IfModule>
+
+# -----------------------------------------------------------
+# PHP Settings
+# -----------------------------------------------------------
+<IfModule mod_php.c>
+    php_value session.cookie_httponly 1
+    # Session cookie security — let router.php handle Secure flag dynamically.
+    # DO NOT override with a hardcoded 0 value here.
+    php_value session.use_strict_mode 1
+    php_value display_errors 0
+    php_value log_errors 1
+    php_value upload_max_filesize 10M
+    php_value post_max_size 15M
+    php_value max_execution_time 60
+</IfModule>
+
+# -----------------------------------------------------------
+# Prevent directory listing
+# -----------------------------------------------------------
+Options -Indexes
+
+# -----------------------------------------------------------
+# Deny access to sensitive files
+# -----------------------------------------------------------
+<FilesMatch "\.(sql|env|log|sh|bak|swp|dist|map)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Deny access to config and includes directories
+<IfModule mod_rewrite.c>
+    RewriteRule ^(config|includes|database|middleware)/ - [F,L]
+</IfModule>
+
+# -----------------------------------------------------------
+# Default charset
+# -----------------------------------------------------------
+AddDefaultCharset UTF-8
+
+# -----------------------------------------------------------
+# Gzip compression
+# -----------------------------------------------------------
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE application/json
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/javascript
+</IfModule>
+
+# -----------------------------------------------------------
+# ETag and caching for static assets
+# -----------------------------------------------------------
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 month"
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+    ExpiresByType application/json "access plus 0 seconds"
+</IfModule>
+
+# -----------------------------------------------------------
+# Error documents — only for non-API requests (API sends its own JSON errors)
+# -----------------------------------------------------------
+# Do NOT use ErrorDocument for API errors — router.php handles its own JSON responses
+# ErrorDocument 400 /index.php
+# ErrorDocument 401 /index.php
+# ErrorDocument 403 /index.php
+# ErrorDocument 404 /index.php
+# ErrorDocument 500 /index.php
