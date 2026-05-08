@@ -8,23 +8,25 @@ RUN apt-get update && apt-get install -y libpq-dev \
 # 3. Enable Apache mod_rewrite
 RUN a2enmod rewrite
 
-# 4. Set Document Root to the project root (where index.html is)
+# 4. Set Document Root to the project root
 ENV APACHE_DOCUMENT_ROOT /var/www/html
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
-# 5. Fix permissions and allow overrides (Prevents the "Forbidden" error)
+# 5. CUSTOM FIX: Tell Apache that your specific file is the "Index"
+RUN echo "DirectoryIndex atlas-bank-enterprise-console-v10.html index.php index.html" >> /etc/apache2/apache2.conf
+
+# 6. Allow overrides and fix permissions
 RUN echo "<Directory /var/www/html/> \n\
     Options Indexes FollowSymLinks \n\
     AllowOverride All \n\
     Require all granted \n\
 </Directory>" >> /etc/apache2/apache2.conf
 
-# 6. Copy all project files
+# 7. Copy all project files
 COPY . /var/www/html/
 
-# 7. Ensure correct ownership
+# 8. Ensure correct ownership
 RUN chown -R www-data:www-data /var/www/html && chmod -R 755 /var/www/html
 
-# 8. Tell Render to look at port 80
 EXPOSE 80
