@@ -146,7 +146,7 @@ switch ($method) {
                 $countStmt->execute($params);
                 $total = (int)$countStmt->fetch()['total'];
                 // ★ FIX (APPR-B002): JOIN staff table to resolve submitted_by and decided_by names
-                $stmt = $db->prepare("SELECT a.*, s1.full_name AS submitted_by_name, s2.full_name AS decided_by_name FROM approvals a LEFT JOIN staff s1 ON a.submitted_by = s1.id LEFT JOIN staff s2 ON a.decided_by = s2.id ' . $where . ' ORDER BY a.submitted_at DESC LIMIT CAST(:limit AS INTEGER) OFFSET CAST(:offset AS INTEGER)");
+                $stmt = $db->prepare('SELECT a.*, s1.full_name AS submitted_by_name, s2.full_name AS decided_by_name FROM approvals a LEFT JOIN staff s1 ON a.submitted_by = s1.id LEFT JOIN staff s2 ON a.decided_by = s2.id ' . $where . ' ORDER BY a.submitted_at DESC LIMIT CAST(:limit AS INTEGER) OFFSET CAST(:offset AS INTEGER)');
                 foreach ($params as $k => $v) { $stmt->bindValue($k, $v); }
                 $stmt->bindValue(':limit', $pageSize, PDO::PARAM_INT);
                 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);

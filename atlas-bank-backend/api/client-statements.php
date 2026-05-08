@@ -340,7 +340,7 @@ function streamStatementPrintDocument(
     }
     $push(str_repeat('-', 96));
     $push('CERTIFICATION');
-    $push('This statement is a true and complete reflection of all transactions posted to the above-referenced account during the stated period. The balances shown have been verified against ' . (string)$branding['bank_name_short'] . ''s core banking system records.');
+    $push('This statement is a true and complete reflection of all transactions posted to the above-referenced account during the stated period. The balances shown have been verified against ' . (string)$branding['bank_name_short'] . '\'s core banking system records.');
     $push('CONFIDENTIALITY NOTICE');
     $push('This document contains privileged and confidential information intended solely for the named account holder. Unauthorized use, disclosure, copying, or distribution is strictly prohibited.');
     $push(str_repeat('-', 96));

@@ -136,7 +136,7 @@ $seedInsertStmt = $db->prepare(
 // ── Self-heal: repair corrupted settings where name was overwritten with the key ──
 $repairStmt = $db->prepare(
     'UPDATE settings SET name = :name, category = :cat, description = :desc, requires_approval = :reqApp
-     WHERE "key" = :key AND (name = "key" OR name IS NULL OR category = 'General' OR description IS NULL)'
+     WHERE "key" = :key AND (name = "key" OR name IS NULL OR category = \'General\' OR description IS NULL)'
 );
 foreach ($operationalDefaults as $def) {
     try {
@@ -169,7 +169,7 @@ switch ($method) {
         $where = buildWhere($_GET, ['category', '"key"'], ['category' => '=', '"key"' => '='], $params);
         try {
             $db = getDB();
-            $stmt = $db->prepare("SELECT * FROM settings ' . $where . ' ORDER BY category, \"key\" ASC");
+            $stmt = $db->prepare('SELECT * FROM settings ' . $where . ' ORDER BY category, \"key\" ASC');
             $stmt->execute($params);
             successResponse($stmt->fetchAll());
         } catch (PDOException $e) { serverErrorResponse('Database error.'); }

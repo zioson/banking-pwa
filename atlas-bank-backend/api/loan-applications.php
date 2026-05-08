@@ -772,7 +772,7 @@ switch ($method) {
                     // Check for orphaned ACTIVE loan by customer_id + amount
                     $orphanCheck = $db->prepare(
                         'SELECT id, loan_number, status FROM loans ' .
-                        'WHERE customer_id = :cid AND principal = :amt AND status IN ('ACTIVE', 'DELINQUENT') ' .
+                        'WHERE customer_id = :cid AND principal = :amt AND status IN (\'ACTIVE\', \'DELINQUENT\') ' .
                         'ORDER BY id DESC LIMIT 1'
                     );
                     $orphanCheck->execute([':cid' => (int)$app['customer_id'], ':amt' => (float)$app['amount']]);
@@ -788,7 +788,7 @@ switch ($method) {
                 }
 
                 if (!empty($fields)) {
-                    $updStmt = $db->prepare("UPDATE loan_applications SET ' . implode(', ', $fields) . ' WHERE id = :id");
+                    $updStmt = $db->prepare('UPDATE loan_applications SET ' . implode(', ', $fields) . ' WHERE id = :id');
                     $updStmt->execute($params);
                 }
 

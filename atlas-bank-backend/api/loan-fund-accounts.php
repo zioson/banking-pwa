@@ -89,7 +89,7 @@ function lfEnsureSchema(PDO $db): void {
     lfAddCol($db, 'general_ledger', 'branch', "VARCHAR(100) DEFAULT ''");
     $brIdx = $db->query("SELECT indexname FROM pg_indexes WHERE tablename = 'general_ledger' WHERE indexname = 'idx_branch'")->fetch();
     if (!$brIdx) {
-        $db->exec("ALTER TABLE general_ledger ADD INDEX idx_branch (branch)");
+        $db->exec("CREATE INDEX IF NOT EXISTS idx_branch ON general_ledger (branch)");
     }
 
     // ── 2. Chart of Accounts (needed for GL code validation) ──

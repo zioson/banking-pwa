@@ -30,22 +30,22 @@ if (!($method === 'POST' && $id === null)) {
 
 // ── Auto-create audit tables if missing (self-healing) ──
 $db = getDB();
-$db->exec('CREATE TABLE IF NOT EXISTS "audit_logs" (
-    "id" SERIAL PRIMARY KEY,
-    "uuid" VARCHAR(50) DEFAULT '',
-    "actor" VARCHAR(200) DEFAULT '',
-    "actor_branch" VARCHAR(200) DEFAULT '',
-    "action" VARCHAR(100) DEFAULT '',
-    "entity" VARCHAR(100) DEFAULT '',
-    "entity_id" VARCHAR(100) DEFAULT '',
-    "result" VARCHAR(20) DEFAULT 'SUCCESS',
-    "ip" VARCHAR(45) DEFAULT '',
-    "details" TEXT,
-    "module" VARCHAR(50) DEFAULT '',
-    "category" VARCHAR(50) DEFAULT '',
-    "user_agent" VARCHAR(500) DEFAULT '',
-    "timestamp" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)');
+$db->exec("CREATE TABLE IF NOT EXISTS audit_logs (
+    id SERIAL PRIMARY KEY,
+    uuid VARCHAR(50) DEFAULT '',
+    actor VARCHAR(200) DEFAULT '',
+    actor_branch VARCHAR(200) DEFAULT '',
+    action VARCHAR(100) DEFAULT '',
+    entity VARCHAR(100) DEFAULT '',
+    entity_id VARCHAR(100) DEFAULT '',
+    result VARCHAR(20) DEFAULT 'SUCCESS',
+    ip VARCHAR(45) DEFAULT '',
+    details TEXT,
+    module VARCHAR(50) DEFAULT '',
+    category VARCHAR(50) DEFAULT '',
+    user_agent VARCHAR(500) DEFAULT '',
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
 try { $db->exec('CREATE INDEX IF NOT EXISTS idx_al_actor ON "audit_logs" (actor)'); } catch (PDOException $e) {}
 try { $db->exec('CREATE INDEX IF NOT EXISTS idx_al_action ON "audit_logs" (action)'); } catch (PDOException $e) {}
 try { $db->exec('CREATE INDEX IF NOT EXISTS idx_al_entity ON "audit_logs" (entity)'); } catch (PDOException $e) {}
@@ -82,20 +82,20 @@ try {
         $db->exec("ALTER TABLE \"audit_logs\" ADD COLUMN \"user_agent\" VARCHAR(500) DEFAULT ''");
     }
 } catch (PDOException $e) { /* non-fatal: table may not exist yet */ }
-$db->exec('CREATE TABLE IF NOT EXISTS "audit_findings" (
-    "id" SERIAL PRIMARY KEY,
-    "severity" VARCHAR(20) NOT NULL DEFAULT 'LOW',
-    "category" VARCHAR(100) DEFAULT '',
-    "description" TEXT,
-    "recommendation" TEXT,
-    "branch" VARCHAR(200) DEFAULT '',
-    "status" VARCHAR(50) NOT NULL DEFAULT 'OPEN',
-    "assignee" VARCHAR(200) DEFAULT '',
-    "created_date" DATE DEFAULT NULL,
-    "created_by" VARCHAR(200) DEFAULT '',
-    "timestamp" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    "deleted_at" TIMESTAMP NULL DEFAULT NULL
-)');
+$db->exec("CREATE TABLE IF NOT EXISTS audit_findings (
+    id SERIAL PRIMARY KEY,
+    severity VARCHAR(20) NOT NULL DEFAULT 'LOW',
+    category VARCHAR(100) DEFAULT '',
+    description TEXT,
+    recommendation TEXT,
+    branch VARCHAR(200) DEFAULT '',
+    status VARCHAR(50) NOT NULL DEFAULT 'OPEN',
+    assignee VARCHAR(200) DEFAULT '',
+    created_date DATE DEFAULT NULL,
+    created_by VARCHAR(200) DEFAULT '',
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL
+)");
 try { $db->exec('CREATE INDEX IF NOT EXISTS idx_af_severity ON "audit_findings" (severity)'); } catch (PDOException $e) {}
 try { $db->exec('CREATE INDEX IF NOT EXISTS idx_af_status ON "audit_findings" (status)'); } catch (PDOException $e) {}
 try { $db->exec('CREATE INDEX IF NOT EXISTS idx_af_branch ON "audit_findings" (branch)'); } catch (PDOException $e) {}
@@ -138,7 +138,7 @@ switch ($method) {
                 foreach ($params as $k => $v) { $countStmt->bindValue($k, $v); }
                 $countStmt->execute();
                 $total = (int)$countStmt->fetchAll(PDO::FETCH_ASSOC)[0]['total'] ?? 0;
-                $stmt = $db->prepare("SELECT * FROM audit_findings ' . $where . ' ORDER BY timestamp DESC LIMIT CAST(:limit AS INTEGER) OFFSET CAST(:offset AS INTEGER)");
+                $stmt = $db->prepare('SELECT * FROM audit_findings ' . $where . ' ORDER BY timestamp DESC LIMIT CAST(:limit AS INTEGER) OFFSET CAST(:offset AS INTEGER)');
                 foreach ($params as $k => $v) { $stmt->bindValue($k, $v); }
                 $stmt->bindValue(':limit', $pageSize, PDO::PARAM_INT);
                 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
@@ -175,7 +175,7 @@ switch ($method) {
             foreach ($params as $k => $v) { $countStmt->bindValue($k, $v); }
             $countStmt->execute();
             $total = (int)$countStmt->fetchAll(PDO::FETCH_ASSOC)[0]['total'] ?? 0;
-            $stmt = $db->prepare("SELECT * FROM audit_logs ' . $where . ' ORDER BY timestamp DESC LIMIT CAST(:limit AS INTEGER) OFFSET CAST(:offset AS INTEGER)");
+            $stmt = $db->prepare('SELECT * FROM audit_logs ' . $where . ' ORDER BY timestamp DESC LIMIT CAST(:limit AS INTEGER) OFFSET CAST(:offset AS INTEGER)');
             foreach ($params as $k => $v) { $stmt->bindValue($k, $v); }
             $stmt->bindValue(':limit', $pageSize, PDO::PARAM_INT);
             $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
@@ -320,43 +320,43 @@ function buildAuditDashboard(array $staff): array {
     $db = getDB();
 
     // ── Auto-create any missing tables that this dashboard queries ──
-    $db->exec('CREATE TABLE IF NOT EXISTS "operating_account_transactions" (
-        "id" SERIAL PRIMARY KEY,
-        "ref" VARCHAR(50),
-        "operating_account_id" INTEGER NOT NULL,
-        "date" DATE NOT NULL,
-        "type" VARCHAR(20) NOT NULL CHECK ("type" IN ('CREDIT','DEBIT')),
-        "description" TEXT,
-        "amount" DECIMAL(20,2) NOT NULL,
-        "balance_after" DECIMAL(20,2) NOT NULL,
-        "operator" VARCHAR(200),
-        "contra_account" VARCHAR(100) DEFAULT '',
-        "transaction_type" VARCHAR(50) DEFAULT '',
-        "branch" VARCHAR(100) DEFAULT '',
-        "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )');
+    $db->exec("CREATE TABLE IF NOT EXISTS operating_account_transactions (
+        id SERIAL PRIMARY KEY,
+        ref VARCHAR(50),
+        operating_account_id INTEGER NOT NULL,
+        date DATE NOT NULL,
+        type VARCHAR(20) NOT NULL CHECK (type IN ('CREDIT','DEBIT')),
+        description TEXT,
+        amount DECIMAL(20,2) NOT NULL,
+        balance_after DECIMAL(20,2) NOT NULL,
+        operator VARCHAR(200),
+        contra_account VARCHAR(100) DEFAULT '',
+        transaction_type VARCHAR(50) DEFAULT '',
+        branch VARCHAR(100) DEFAULT '',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
     try { $db->exec('CREATE INDEX IF NOT EXISTS idx_oat_branch ON "operating_account_transactions" (branch)'); } catch (PDOException $e) {}
     try { $db->exec('CREATE INDEX IF NOT EXISTS idx_oat_type ON "operating_account_transactions" (type)'); } catch (PDOException $e) {}
-    $db->exec('CREATE TABLE IF NOT EXISTS "profit_ledger" (
-        "id" SERIAL PRIMARY KEY,
-        "gl_code" VARCHAR(20) DEFAULT '',
-        "gl_account_name" VARCHAR(100) DEFAULT '',
-        "gl_type" VARCHAR(20) DEFAULT 'INCOME',
-        "category" VARCHAR(50) DEFAULT '',
-        "source_ref" VARCHAR(50) DEFAULT '',
-        "source_type" VARCHAR(50) DEFAULT '',
-        "account_number" VARCHAR(50) DEFAULT '',
-        "account_type" VARCHAR(50) DEFAULT '',
-        "customer_name" VARCHAR(200) DEFAULT '',
-        "branch" VARCHAR(100) DEFAULT '',
-        "gross_amount" DECIMAL(18,2) DEFAULT 0,
-        "fee_amount" DECIMAL(18,2) DEFAULT 0,
-        "fee_pct" DECIMAL(8,4) DEFAULT 0,
-        "fee_mode" VARCHAR(50) DEFAULT '',
-        "operator" VARCHAR(100) DEFAULT '',
-        "description" TEXT,
-        "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )');
+    $db->exec("CREATE TABLE IF NOT EXISTS profit_ledger (
+        id SERIAL PRIMARY KEY,
+        gl_code VARCHAR(20) DEFAULT '',
+        gl_account_name VARCHAR(100) DEFAULT '',
+        gl_type VARCHAR(20) DEFAULT 'INCOME',
+        category VARCHAR(50) DEFAULT '',
+        source_ref VARCHAR(50) DEFAULT '',
+        source_type VARCHAR(50) DEFAULT '',
+        account_number VARCHAR(50) DEFAULT '',
+        account_type VARCHAR(50) DEFAULT '',
+        customer_name VARCHAR(200) DEFAULT '',
+        branch VARCHAR(100) DEFAULT '',
+        gross_amount DECIMAL(18,2) DEFAULT 0,
+        fee_amount DECIMAL(18,2) DEFAULT 0,
+        fee_pct DECIMAL(8,4) DEFAULT 0,
+        fee_mode VARCHAR(50) DEFAULT '',
+        operator VARCHAR(100) DEFAULT '',
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
     try { $db->exec('CREATE INDEX IF NOT EXISTS idx_pl_branch ON "profit_ledger" (branch)'); } catch (PDOException $e) {}
     // ★ REMOVED: Conflicting approvals table DDL (use approvals.php schema instead)
     // The buildAuditDashboard() was creating a DIFFERENT approvals table schema than
@@ -445,35 +445,35 @@ function buildAuditDashboard(array $staff): array {
 
     // ── 3. GL Integrity — from general_ledger table (SAME source as GL Accounts panel) ──
     // Ensure tables exist
-    $db->exec('CREATE TABLE IF NOT EXISTS "general_ledger" (
-        "id" SERIAL PRIMARY KEY,
-        "account_code" VARCHAR(10) NOT NULL,
-        "account_name" VARCHAR(200) DEFAULT '',
-        "debit" DECIMAL(20,2) NOT NULL DEFAULT 0,
-        "credit" DECIMAL(20,2) NOT NULL DEFAULT 0,
-        "date" DATE NOT NULL,
-        "reference" VARCHAR(100) DEFAULT '',
-        "description" TEXT,
-        "posted_by" INTEGER DEFAULT NULL,
-        "transaction_type" VARCHAR(50) DEFAULT '',
-        "contra_account" VARCHAR(50) DEFAULT '',
-        "branch" VARCHAR(100) DEFAULT '',
-        "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )');
+    $db->exec("CREATE TABLE IF NOT EXISTS general_ledger (
+        id SERIAL PRIMARY KEY,
+        account_code VARCHAR(10) NOT NULL,
+        account_name VARCHAR(200) DEFAULT '',
+        debit DECIMAL(20,2) NOT NULL DEFAULT 0,
+        credit DECIMAL(20,2) NOT NULL DEFAULT 0,
+        date DATE NOT NULL,
+        reference VARCHAR(100) DEFAULT '',
+        description TEXT,
+        posted_by INTEGER DEFAULT NULL,
+        transaction_type VARCHAR(50) DEFAULT '',
+        contra_account VARCHAR(50) DEFAULT '',
+        branch VARCHAR(100) DEFAULT '',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
     try { $db->exec('CREATE INDEX IF NOT EXISTS idx_gl_account_code ON "general_ledger" (account_code)'); } catch (PDOException $e) {}
     try { $db->exec('CREATE INDEX IF NOT EXISTS idx_gl_date ON "general_ledger" (date)'); } catch (PDOException $e) {}
     try { $db->exec('CREATE INDEX IF NOT EXISTS idx_gl_reference ON "general_ledger" (reference)'); } catch (PDOException $e) {}
     try { $db->exec('CREATE INDEX IF NOT EXISTS idx_gl_branch ON "general_ledger" (branch)'); } catch (PDOException $e) {}
-    $db->exec('CREATE TABLE IF NOT EXISTS "chart_of_accounts" (
-        "id" SERIAL PRIMARY KEY,
-        "code" VARCHAR(10) NOT NULL UNIQUE,
-        "name" VARCHAR(200) NOT NULL,
-        "type" VARCHAR(20) NOT NULL CHECK ("type" IN ('ASSET','LIABILITY','EQUITY','INCOME','EXPENSE')),
-        "category" VARCHAR(100),
-        "description" TEXT,
-        "is_active" BOOLEAN DEFAULT TRUE,
-        "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )');
+    $db->exec("CREATE TABLE IF NOT EXISTS chart_of_accounts (
+        id SERIAL PRIMARY KEY,
+        code VARCHAR(10) NOT NULL UNIQUE,
+        name VARCHAR(200) NOT NULL,
+        type VARCHAR(20) NOT NULL CHECK (type IN ('ASSET','LIABILITY','EQUITY','INCOME','EXPENSE')),
+        category VARCHAR(100),
+        description TEXT,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
     try { $db->exec('CREATE INDEX IF NOT EXISTS idx_coa_code ON "chart_of_accounts" (code)'); } catch (PDOException $e) {}
     try { $db->exec('CREATE INDEX IF NOT EXISTS idx_coa_type ON "chart_of_accounts" (type)'); } catch (PDOException $e) {}
     try { $db->exec('CREATE INDEX IF NOT EXISTS idx_coa_active ON "chart_of_accounts" (is_active)'); } catch (PDOException $e) {}

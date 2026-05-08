@@ -50,50 +50,50 @@ if ($method !== 'GET') {
 // ── Auto-create/enrich branches table ──
 $db = getDB();
 
-$db->exec('CREATE TABLE IF NOT EXISTS "branches" (
-    "id" SERIAL PRIMARY KEY,
-    "code" VARCHAR(20) NOT NULL,
-    "name" VARCHAR(255) NOT NULL,
-    "region" VARCHAR(100) DEFAULT NULL,
-    "country" VARCHAR(100) NOT NULL DEFAULT 'CM',
-    "status" VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
-    "address" VARCHAR(500) DEFAULT NULL,
-    "phone" VARCHAR(50) DEFAULT NULL,
-    "manager" VARCHAR(255) DEFAULT NULL,
-    "opened_date" DATE DEFAULT NULL,
-    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE ("code")
-)');
+$db->exec("CREATE TABLE IF NOT EXISTS branches (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(20) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    region VARCHAR(100) DEFAULT NULL,
+    country VARCHAR(100) NOT NULL DEFAULT 'CM',
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    address VARCHAR(500) DEFAULT NULL,
+    phone VARCHAR(50) DEFAULT NULL,
+    manager VARCHAR(255) DEFAULT NULL,
+    opened_date DATE DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (code)
+)");
 try { $db->exec('CREATE INDEX IF NOT EXISTS idx_branches_status ON "branches" (status)'); } catch (PDOException $e) {}
 try { $db->exec('CREATE INDEX IF NOT EXISTS idx_branches_region ON "branches" (region)'); } catch (PDOException $e) {}
 
 // ── Self-heal: ensure dependent tables exist ──
-$db->exec('CREATE TABLE IF NOT EXISTS "audit_logs" (
-    "id" SERIAL PRIMARY KEY,
-    "uuid" VARCHAR(50) NOT NULL,
-    "actor" VARCHAR(255) NOT NULL DEFAULT 'System',
-    "actor_branch" VARCHAR(255) DEFAULT '',
-    "action" VARCHAR(100) NOT NULL DEFAULT '',
-    "entity" VARCHAR(100) DEFAULT '',
-    "entity_id" VARCHAR(100) DEFAULT '',
-    "result" VARCHAR(20) NOT NULL DEFAULT 'SUCCESS',
-    "ip" VARCHAR(45) DEFAULT '',
-    "details" TEXT DEFAULT NULL,
-    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE ("uuid")
-)');
+$db->exec("CREATE TABLE IF NOT EXISTS audit_logs (
+    id SERIAL PRIMARY KEY,
+    uuid VARCHAR(50) NOT NULL,
+    actor VARCHAR(255) NOT NULL DEFAULT 'System',
+    actor_branch VARCHAR(255) DEFAULT '',
+    action VARCHAR(100) NOT NULL DEFAULT '',
+    entity VARCHAR(100) DEFAULT '',
+    entity_id VARCHAR(100) DEFAULT '',
+    result VARCHAR(20) NOT NULL DEFAULT 'SUCCESS',
+    ip VARCHAR(45) DEFAULT '',
+    details TEXT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (uuid)
+)");
 try { $db->exec('CREATE INDEX IF NOT EXISTS idx_audit_action ON "audit_logs" (action)'); } catch (PDOException $e) {}
 try { $db->exec('CREATE INDEX IF NOT EXISTS idx_audit_entity ON "audit_logs" (entity)'); } catch (PDOException $e) {}
 try { $db->exec('CREATE INDEX IF NOT EXISTS idx_audit_created ON "audit_logs" (created_at)'); } catch (PDOException $e) {}
 
-$db->exec('CREATE TABLE IF NOT EXISTS "staff_branches" (
-    "id" SERIAL PRIMARY KEY,
-    "staff_id" INTEGER NOT NULL,
-    "branch_name" VARCHAR(255) NOT NULL,
-    "assigned_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE ("staff_id", "branch_name")
-)');
+$db->exec("CREATE TABLE IF NOT EXISTS staff_branches (
+    id SERIAL PRIMARY KEY,
+    staff_id INTEGER NOT NULL,
+    branch_name VARCHAR(255) NOT NULL,
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (staff_id, branch_name)
+)");
 try { $db->exec('CREATE INDEX IF NOT EXISTS idx_sb_branch ON "staff_branches" (branch_name)'); } catch (PDOException $e) {}
 try { $db->exec('CREATE INDEX IF NOT EXISTS idx_sb_staff ON "staff_branches" (staff_id)'); } catch (PDOException $e) {}
 

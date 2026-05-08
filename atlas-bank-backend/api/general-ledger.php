@@ -45,7 +45,7 @@ function ensureGeneralLedgerTable(PDO $db): void {
     $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'transaction_type'")->fetch();
     if (!$col) {
         $db->exec("ALTER TABLE general_ledger ADD COLUMN transaction_type VARCHAR(50) DEFAULT ''");
-        $db->exec("ALTER TABLE general_ledger ADD INDEX idx_transaction_type (transaction_type)");
+        $db->exec("CREATE INDEX IF NOT EXISTS idx_transaction_type ON general_ledger (transaction_type)");
     }
     // Safe migration: add contra_account column if missing
     $col2 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'contra_account'")->fetch();
@@ -64,7 +64,7 @@ function ensureGeneralLedgerTable(PDO $db): void {
     if (!$col3) {
         $db->exec("ALTER TABLE general_ledger ADD COLUMN branch VARCHAR(100) DEFAULT ''");
         $brIdx = $db->query("SELECT indexname FROM pg_indexes WHERE tablename = 'general_ledger' WHERE indexname = 'idx_branch'")->fetch();
-        if (!$brIdx) { $db->exec("ALTER TABLE general_ledger ADD INDEX idx_branch (branch)"); }
+        if (!$brIdx) { $db->exec("CREATE INDEX IF NOT EXISTS idx_branch ON general_ledger (branch)"); }
     }
 
     // ★ BACKFILL MIGRATION: Populate branch on existing GL entries that have no branch.

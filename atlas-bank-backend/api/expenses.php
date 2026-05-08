@@ -243,14 +243,14 @@ switch ($method) {
             $glCols = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'branch'")->fetchAll();
             if (empty($glCols)) {
                 $db->exec("ALTER TABLE general_ledger ADD COLUMN branch VARCHAR(100) DEFAULT ''");
-                $db->exec("ALTER TABLE general_ledger ADD INDEX idx_branch (branch)");
+                $db->exec("CREATE INDEX IF NOT EXISTS idx_branch ON general_ledger (branch)");
             }
 
             // Safe migration: add transaction_type column if missing from general_ledger
             $ttCols = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'transaction_type'")->fetchAll();
             if (empty($ttCols)) {
                 $db->exec("ALTER TABLE general_ledger ADD COLUMN transaction_type VARCHAR(50) DEFAULT ''");
-                $db->exec("ALTER TABLE general_ledger ADD INDEX idx_transaction_type (transaction_type)");
+                $db->exec("CREATE INDEX IF NOT EXISTS idx_transaction_type ON general_ledger (transaction_type)");
             }
 
             // Safe migration: add contra_account column if missing from general_ledger

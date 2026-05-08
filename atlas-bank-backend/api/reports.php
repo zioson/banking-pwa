@@ -608,7 +608,7 @@ switch ($method) {
                 // FIX: Wrap in try-catch — table may still be missing columns
                 $recentTransactions = [];
                 try {
-                    $recentStmt = $db->prepare("SELECT id, ref, type, status, direction, amount, fee, fee_pct, net_amount, fee_mode, total_tax, account, account_type, customer_name, description, category, branch, memo, module, operator_id, operator_name, created_at FROM transactions WHERE 1=1' . $dashBrFilter . ' ORDER BY created_at DESC LIMIT 10");
+                    $recentStmt = $db->prepare('SELECT id, ref, type, status, direction, amount, fee, fee_pct, net_amount, fee_mode, total_tax, account, account_type, customer_name, description, category, branch, memo, module, operator_id, operator_name, created_at FROM transactions WHERE 1=1' . $dashBrFilter . ' ORDER BY created_at DESC LIMIT 10');
                     rptBindBranchFilter($db, $recentStmt, $staff, $branch);
                     $recentStmt->execute();
                     $recentTransactions = $recentStmt->fetchAll();
@@ -679,7 +679,7 @@ switch ($method) {
                 $params = [];
                 $where = '';
                 if (!empty($pt)) { $where = 'WHERE product_type = :pt'; $params[':pt'] = $pt; }
-                $stmt = $db->prepare("SELECT id, snapshot_date, product_type, total_balance, total_available, created_at FROM balance_trends ' . $where . ' ORDER BY snapshot_date DESC, product_type ASC LIMIT 90");
+                $stmt = $db->prepare('SELECT id, snapshot_date, product_type, total_balance, total_available, created_at FROM balance_trends ' . $where . ' ORDER BY snapshot_date DESC, product_type ASC LIMIT 90');
                 $stmt->execute($params);
                 successResponse($stmt->fetchAll());
 
@@ -1128,7 +1128,7 @@ switch ($method) {
                         }
 
                         // Previous period expenses
-                        $prevExpWhere = ' WHERE date >= :prev_exp_df AND date <= :prev_exp_dt AND status = 'APPROVED' '
+                        $prevExpWhere = ' WHERE date >= :prev_exp_df AND date <= :prev_exp_dt AND status = \'APPROVED\' '
                             . ($bf['exp_branch'] ?? ''); // comparison always has date filters
                         $prevExpParams = array_merge(
                             [':prev_exp_df' => $prevFrom, ':prev_exp_dt' => $prevTo],
@@ -1701,7 +1701,7 @@ switch ($method) {
                     }
 
                     // Current period expenses by category
-                    $curExpWhere = ' WHERE date >= :c_exp_df AND date <= :c_exp_dt AND status = 'APPROVED' '
+                    $curExpWhere = ' WHERE date >= :c_exp_df AND date <= :c_exp_dt AND status = \'APPROVED\' '
                         . ($bf['exp_branch'] ?? '');
                     $curExpParams = array_merge(
                         [':c_exp_df' => $dateFrom, ':c_exp_dt' => $dateTo],
@@ -1716,7 +1716,7 @@ switch ($method) {
                     $curExpByCat = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     // Previous period expenses by category
-                    $prevExpWhere = ' WHERE date >= :p_exp_df AND date <= :p_exp_dt AND status = 'APPROVED' '
+                    $prevExpWhere = ' WHERE date >= :p_exp_df AND date <= :p_exp_dt AND status = \'APPROVED\' '
                         . ($bf['exp_branch'] ?? '');
                     $prevExpParams = array_merge(
                         [':p_exp_df' => $prevFrom, ':p_exp_dt' => $prevTo],

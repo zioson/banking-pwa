@@ -126,7 +126,7 @@ function opEnsureTransactionsTable(PDO $db): void {
     // Safe migration: add branch index for filtered queries
     $brIdx = $db->query("SELECT indexname FROM pg_indexes WHERE tablename = 'operating_account_transactions' WHERE indexname = 'idx_oat_branch'")->fetch();
     if (!$brIdx) {
-        $db->exec("ALTER TABLE operating_account_transactions ADD INDEX idx_oat_branch (branch)");
+        $db->exec("CREATE INDEX IF NOT EXISTS idx_oat_branch ON operating_account_transactions (branch)");
     }
 
     // ★ FIX (OPFUND-B001b): Backfill branch on existing transactions that have no branch set.
@@ -183,7 +183,7 @@ function opEnsureGeneralLedgerTable(PDO $db): void {
     $glCol = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'transaction_type'")->fetch();
     if (!$glCol) {
         $db->exec("ALTER TABLE general_ledger ADD COLUMN transaction_type VARCHAR(50) DEFAULT ''");
-        $db->exec("ALTER TABLE general_ledger ADD INDEX idx_transaction_type (transaction_type)");
+        $db->exec("CREATE INDEX IF NOT EXISTS idx_transaction_type ON general_ledger (transaction_type)");
     }
     // Safe migration: add contra_account column
     opAddCol($db, 'general_ledger', 'contra_account', "VARCHAR(50) DEFAULT ''");
@@ -192,7 +192,7 @@ function opEnsureGeneralLedgerTable(PDO $db): void {
     // Safe migration: add branch index for filtered GL queries
     $brIdx = $db->query("SELECT indexname FROM pg_indexes WHERE tablename = 'general_ledger' WHERE indexname = 'idx_branch'")->fetch();
     if (!$brIdx) {
-        $db->exec("ALTER TABLE general_ledger ADD INDEX idx_branch (branch)");
+        $db->exec("CREATE INDEX IF NOT EXISTS idx_branch ON general_ledger (branch)");
     }
 }
 

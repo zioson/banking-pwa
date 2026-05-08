@@ -47,7 +47,7 @@ function ensureOpFundColumns(PDO $db): void {
     // Safe migration: add branch index for filtered queries
     $brIdx = $db->query("SELECT indexname FROM pg_indexes WHERE tablename = 'operating_account_transactions' WHERE indexname = 'idx_oat_branch'")->fetch();
     if (!$brIdx) {
-        $db->exec("ALTER TABLE operating_account_transactions ADD INDEX idx_oat_branch (branch)");
+        $db->exec("CREATE INDEX IF NOT EXISTS idx_oat_branch ON operating_account_transactions (branch)");
     }
 }
 

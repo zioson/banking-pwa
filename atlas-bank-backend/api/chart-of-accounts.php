@@ -57,7 +57,7 @@ switch ($method) {
             $db->prepare("UPDATE general_ledger SET account_name = 'Operating Fund - Bank' WHERE account_code = '1400' AND account_name LIKE '%Fixed Asset%'")
               ->execute();
 
-            $stmt = $db->prepare("SELECT id, code, name, type, category, description, is_active FROM chart_of_accounts ' . $where . ' ORDER BY code ASC");
+            $stmt = $db->prepare('SELECT id, code, name, type, category, description, is_active FROM chart_of_accounts ' . $where . ' ORDER BY code ASC');
             $stmt->execute($params);
             successResponse($stmt->fetchAll());
         } catch (PDOException $e) { serverErrorResponse('Database error.'); }

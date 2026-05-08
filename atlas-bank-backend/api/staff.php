@@ -1046,7 +1046,7 @@ switch ($method) {
         // Profile picture: handle null (remove) and base64 (set) separately
         if (array_key_exists('profile_picture', $input)) {
             if ($input['profile_picture'] === null || $input['profile_picture'] === '') {
-                [] = '"profile_picture" = NULL';
+                $fields[] = '"profile_picture" = NULL';
             } else {
                 // ★ SECURITY: Validate profile picture size (max ~500KB base64)
                 if (strlen($input['profile_picture']) > 700000) {
@@ -1057,7 +1057,7 @@ switch ($method) {
                 if (!preg_match('/^data:image\/(png|jpeg|jpg|gif|webp);base64,/i', $pp)) {
                     validationError(['profile_picture' => 'Profile picture must be a valid image (PNG, JPEG, GIF, or WebP).']);
                 }
-                [] = '"profile_picture" = :profile_picture';
+                $fields[] = '"profile_picture" = :profile_picture';
                 $params[":profile_picture"] = $pp;
             }
         }

@@ -21,48 +21,48 @@ $db = getDB();
 
 // ── Main policies table ──
 try {
-$db->exec('CREATE TABLE IF NOT EXISTS "policies" (
-    "id" SERIAL PRIMARY KEY,
-    "code" VARCHAR(50) NOT NULL,
-    "version" VARCHAR(20) DEFAULT \'1.0\',
-    "name" VARCHAR(255) NOT NULL,
-    "description" TEXT DEFAULT NULL,
-    "content" TEXT DEFAULT NULL,
-    "category" VARCHAR(100) DEFAULT \'GENERAL\',
-    "status" VARCHAR(20) DEFAULT \'ACTIVE\',
-    "severity" VARCHAR(20) DEFAULT \'MEDIUM\',
-    "owner" VARCHAR(191) DEFAULT NULL,
-    "review_cycle_days" INT DEFAULT 365,
-    "effective_from" DATE DEFAULT NULL,
-    "effective_to" DATE DEFAULT NULL,
-    "last_reviewed_at" DATE DEFAULT NULL,
-    "next_review_date" DATE DEFAULT NULL,
-    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    "created_by" VARCHAR(191) DEFAULT NULL,
-    UNIQUE ("code", "version")
-)');
+$db->exec("CREATE TABLE IF NOT EXISTS policies (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(50) NOT NULL,
+    version VARCHAR(20) DEFAULT '1.0',
+    name VARCHAR(255) NOT NULL,
+    description TEXT DEFAULT NULL,
+    content TEXT DEFAULT NULL,
+    category VARCHAR(100) DEFAULT 'GENERAL',
+    status VARCHAR(20) DEFAULT 'ACTIVE',
+    severity VARCHAR(20) DEFAULT 'MEDIUM',
+    owner VARCHAR(191) DEFAULT NULL,
+    review_cycle_days INT DEFAULT 365,
+    effective_from DATE DEFAULT NULL,
+    effective_to DATE DEFAULT NULL,
+    last_reviewed_at DATE DEFAULT NULL,
+    next_review_date DATE DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_by VARCHAR(191) DEFAULT NULL,
+    UNIQUE (code, version)
+)");
 } catch (PDOException $e) { /* table already exists */ }
 
 // ── Revisions history table ──
 try {
-$db->exec('CREATE TABLE IF NOT EXISTS "policy_revisions" (
-    "id" SERIAL PRIMARY KEY,
-    "policy_id" INTEGER NOT NULL,
-    "revision" INTEGER NOT NULL DEFAULT 1,
-    "version" VARCHAR(20) DEFAULT \'1.0\',
-    "name" VARCHAR(255) NOT NULL,
-    "description" TEXT DEFAULT NULL,
-    "content" TEXT DEFAULT NULL,
-    "category" VARCHAR(100) DEFAULT NULL,
-    "severity" VARCHAR(20) DEFAULT NULL,
-    "owner" VARCHAR(191) DEFAULT NULL,
-    "effective_from" DATE DEFAULT NULL,
-    "effective_to" DATE DEFAULT NULL,
-    "change_summary" TEXT DEFAULT NULL,
-    "changed_by" VARCHAR(191) DEFAULT NULL,
-    "changed_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)');
+$db->exec("CREATE TABLE IF NOT EXISTS policy_revisions (
+    id SERIAL PRIMARY KEY,
+    policy_id INTEGER NOT NULL,
+    revision INTEGER NOT NULL DEFAULT 1,
+    version VARCHAR(20) DEFAULT '1.0',
+    name VARCHAR(255) NOT NULL,
+    description TEXT DEFAULT NULL,
+    content TEXT DEFAULT NULL,
+    category VARCHAR(100) DEFAULT NULL,
+    severity VARCHAR(20) DEFAULT NULL,
+    owner VARCHAR(191) DEFAULT NULL,
+    effective_from DATE DEFAULT NULL,
+    effective_to DATE DEFAULT NULL,
+    change_summary TEXT DEFAULT NULL,
+    changed_by VARCHAR(191) DEFAULT NULL,
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
 } catch (PDOException $e) { /* table already exists */ }
 
 // ── Self-heal: migrate old unique key + add missing columns ──
@@ -85,16 +85,16 @@ foreach ([
 
 // Migrate old UNIQUE (code) → uk_code_version(code, version)
 try {
-    $db->exec('ALTER TABLE "policies" DROP INDEX "uk_code"');
+    $db->exec('DROP INDEX IF EXISTS uk_code');
 } catch (PDOException $e) { /* index doesn't exist or already removed */ }
 try {
-    $db->exec('ALTER TABLE "policies" ADD UNIQUE KEY "uk_code_version" ("code", "version")');
+    $db->exec('CREATE UNIQUE INDEX IF NOT EXISTS uk_code_version ON policies (code, version)');
 } catch (PDOException $e) { /* index already exists */ }
 
 // Add missing indexes
 foreach ([
-    "ALTER TABLE \"policies\" ADD INDEX \"idx_status\" (\"status\")",
-    "ALTER TABLE \"policies\" ADD INDEX \"idx_effective_to\" (\"effective_to\")"
+    "CREATE INDEX IF NOT EXISTS idx_status ON policies (status)",
+    "CREATE INDEX IF NOT EXISTS idx_effective_to ON policies (effective_to)"
 ] as $idxSql) {
     try { $db->exec($idxSql); } catch (PDOException $e) { /* index already exists */ }
 }
@@ -196,7 +196,7 @@ if ($sub === 'review' && $method === 'POST') {
     requireRole(['ADMIN', 'COMPLIANCE']);
     try {
         $today = date('Y-m-d');
-        $stmt = $db->prepare("UPDATE policies SET last_reviewed_at = :today1, next_review_date = (:today2::DATE + (review_cycle_days || ' days\")::INTERVAL), updated_at = NOW() WHERE id = :id');
+        $stmt = $db->prepare("UPDATE policies SET last_reviewed_at = :today1, next_review_date = (:today2::DATE + (review_cycle_days || ' days')::INTERVAL), updated_at = NOW() WHERE id = :id");
         $stmt->execute([':today1' => $today, ':today2' => $today, ':id' => $id]);
         logAudit($staff['full_name'], 'POLICY_REVIEW', 'POLICY', $id, 'SUCCESS',
             'Marked policy ID ' . $id . ' as reviewed', $staff['department'], getClientIp());
@@ -214,7 +214,7 @@ switch ($method) {
         if (!empty($_GET['status']))   { $where .= ' AND status = :st';   $params[':st'] = sanitize($_GET['status']); }
         if (!empty($_GET['search']))   { $where .= ' AND (name LIKE :q OR description LIKE :q OR code LIKE :q)'; $params[':q'] = '%' . sanitize($_GET['search']) . '%'; }
         try {
-            $stmt = $db->prepare("SELECT * FROM policies WHERE ' . $where . ' ORDER BY effective_from DESC, code ASC");
+            $stmt = $db->prepare('SELECT * FROM policies WHERE ' . $where . ' ORDER BY effective_from DESC, code ASC');
             $stmt->execute($params);
             $policies = $stmt->fetchAll();
 

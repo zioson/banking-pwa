@@ -93,35 +93,35 @@ function ensureDocumentColumns(PDO $db): void {
 }
 
 $db = getDB();
-$db->exec('CREATE TABLE IF NOT EXISTS "generated_documents" (
-    "id" INT PRIMARY KEY,
-    "document_number" VARCHAR(100) NOT NULL,
-    "type" VARCHAR(20) NOT NULL,
-    "subtype" VARCHAR(100) DEFAULT NULL,
-    "account_number" VARCHAR(50) DEFAULT NULL,
-    "account_type" VARCHAR(50) DEFAULT NULL,
-    "customer_name" VARCHAR(255) DEFAULT NULL,
-    "customer_id" VARCHAR(50) DEFAULT NULL,
-    "branch" VARCHAR(100) DEFAULT NULL,
-    "period_start" VARCHAR(50) DEFAULT NULL,
-    "period_end" VARCHAR(50) DEFAULT NULL,
-    "generated_by" INT DEFAULT NULL,
-    "generated_by_name" VARCHAR(255) DEFAULT NULL,
-    "status" VARCHAR(20) DEFAULT \'FINAL\',
-    "content" TEXT DEFAULT NULL,
-    "print_count" INT DEFAULT 0,
-    "last_printed_at" TIMESTAMP NULL DEFAULT NULL,
-    "export_count" INT DEFAULT 0,
-    "last_exported_at" TIMESTAMP NULL DEFAULT NULL,
-    "summary" JSONB DEFAULT NULL,
-    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY "uk_document_number" ("document_number"),
-    KEY "idx_type" ("type"),
-    KEY "idx_account" ("account_number"),
-    KEY "idx_customer" ("customer_name"),
-    KEY "idx_branch" ("branch"),
-    KEY "idx_status" ("status")
+$db->exec("CREATE TABLE IF NOT EXISTS generated_documents (
+    id INT PRIMARY KEY,
+    document_number VARCHAR(100) NOT NULL,
+    type VARCHAR(20) NOT NULL,
+    subtype VARCHAR(100) DEFAULT NULL,
+    account_number VARCHAR(50) DEFAULT NULL,
+    account_type VARCHAR(50) DEFAULT NULL,
+    customer_name VARCHAR(255) DEFAULT NULL,
+    customer_id VARCHAR(50) DEFAULT NULL,
+    branch VARCHAR(100) DEFAULT NULL,
+    period_start VARCHAR(50) DEFAULT NULL,
+    period_end VARCHAR(50) DEFAULT NULL,
+    generated_by INT DEFAULT NULL,
+    generated_by_name VARCHAR(255) DEFAULT NULL,
+    status VARCHAR(20) DEFAULT 'FINAL',
+    content TEXT DEFAULT NULL,
+    print_count INT DEFAULT 0,
+    last_printed_at TIMESTAMP NULL DEFAULT NULL,
+    export_count INT DEFAULT 0,
+    last_exported_at TIMESTAMP NULL DEFAULT NULL,
+    summary JSONB DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (document_number)
 )");
+try { $db->exec('CREATE INDEX IF NOT EXISTS idx_doc_type ON generated_documents (type)'); } catch (PDOException $e) {}
+try { $db->exec('CREATE INDEX IF NOT EXISTS idx_doc_account ON generated_documents (account_number)'); } catch (PDOException $e) {}
+try { $db->exec('CREATE INDEX IF NOT EXISTS idx_doc_customer ON generated_documents (customer_name)'); } catch (PDOException $e) {}
+try { $db->exec('CREATE INDEX IF NOT EXISTS idx_doc_branch ON generated_documents (branch)'); } catch (PDOException $e) {}
+try { $db->exec('CREATE INDEX IF NOT EXISTS idx_doc_status ON generated_documents (status)'); } catch (PDOException $e) {};
 
 switch ($method) {
     case 'GET':
@@ -144,7 +144,7 @@ switch ($method) {
             $countStmt = $db->prepare('SELECT COUNT(*) AS total FROM generated_documents ' . $where);
             $countStmt->execute($params);
             $total = (int)$countStmt->fetch()['total'];
-            $stmt = $db->prepare("SELECT * FROM generated_documents ' . $where . ' ORDER BY created_at DESC LIMIT CAST(:limit AS INTEGER) OFFSET CAST(:offset AS INTEGER)");
+            $stmt = $db->prepare('SELECT * FROM generated_documents ' . $where . ' ORDER BY created_at DESC LIMIT CAST(:limit AS INTEGER) OFFSET CAST(:offset AS INTEGER)');
             foreach ($params as $k => $v) { $stmt->bindValue($k, $v); }
             $stmt->bindValue(':limit', $pageSize, PDO::PARAM_INT);
             $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);

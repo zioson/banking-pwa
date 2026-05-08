@@ -79,7 +79,7 @@ switch ($method) {
             $countStmt = $db->prepare('SELECT COUNT(*) AS total FROM notifications ' . $where);
             $countStmt->execute($params);
             $total = (int)$countStmt->fetch()['total'];
-            $stmt = $db->prepare("SELECT * FROM notifications ' . $where . ' ORDER BY timestamp DESC LIMIT CAST(:limit AS INTEGER) OFFSET CAST(:offset AS INTEGER)");
+            $stmt = $db->prepare('SELECT * FROM notifications ' . $where . ' ORDER BY timestamp DESC LIMIT CAST(:limit AS INTEGER) OFFSET CAST(:offset AS INTEGER)');
             foreach ($params as $k => $v) { $stmt->bindValue($k, $v); }
             $stmt->bindValue(':limit', $pageSize, PDO::PARAM_INT);
             $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
