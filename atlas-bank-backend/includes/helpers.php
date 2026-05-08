@@ -636,7 +636,7 @@ function buildWhere(array $filters, array $allowed, array $operators = [], &$par
 function applyBranchFilter(array $staffBranches, string $clientBranch, array &$params, string $role = '', string $columnName = 'branch'): string
 {
  // Build SQL fragment with backtick protection only for simple column names (no dots)
- $safeColumn = (strpos($columnName, '.') !== false) ? $columnName : ""$columnName"";
+ $safeColumn = (strpos($columnName, '.') !== false) ? $columnName : '"' . $columnName . '"';
 
  // ★ FIXED (SEC-AUDIT-001): Admins always bypass branch filtering unless they explicitly request one.
  if (strtoupper($role) === 'ADMIN') {
