@@ -1977,7 +1977,7 @@ switch ($method) {
                 $existingCols = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'profit_ledger' ORDER BY ordinal_position")->fetchAll(PDO::FETCH_COLUMN, 0);
                 foreach ($colMap as $col => $val) {
                     if (in_array($col, $existingCols, true)) {
-                        $insertCols[] = '"' .  . '"';
+                        $insertCols[] = '"' . $col . '"';
                         $insertParams[':' . $col] = $val[0];
                     } else {
                         error_log('[Reports POST] Column ' . $col . ' missing from profit_ledger, skipping.');
