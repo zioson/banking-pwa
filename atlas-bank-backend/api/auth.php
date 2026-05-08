@@ -230,7 +230,7 @@ switch ($method) {
 
                 // Get staff modules
                 try {
-                    $modStmt = $db->prepare('SELECT module_name, COALESCE(access_level, "FULL") AS access_level FROM staff_modules WHERE staff_id = :staff_id');
+                    $modStmt = $db->prepare("SELECT module_name, COALESCE(access_level, 'FULL') AS access_level FROM staff_modules WHERE staff_id = :staff_id");
                     $modStmt->execute([':staff_id' => $staffId]);
                     $modules = array_map(fn($r) => ['name' => $r['module_name'], 'access' => $r['access_level']], $modStmt->fetchAll(PDO::FETCH_ASSOC));
                 } catch (PDOException $e) {
@@ -375,7 +375,7 @@ switch ($method) {
 
             // Reset failed attempts
             $resetStmt = $db->prepare(
-                'UPDATE staff SET failed_login_attempts = FALSE, last_login = NOW(), last_login_ip = :ip
+                'UPDATE staff SET failed_login_attempts = 0, last_login = NOW(), last_login_ip = :ip
                  WHERE id = :id'
             );
             $resetStmt->execute([':ip' => $loginIp, ':id' => $staff['id']]);
@@ -537,7 +537,7 @@ switch ($method) {
 
             // Get staff modules with access levels
             try {
-                $modStmt = $db->prepare('SELECT module_name, COALESCE(access_level, "FULL") AS access_level FROM staff_modules WHERE staff_id = :staff_id');
+                $modStmt = $db->prepare("SELECT module_name, COALESCE(access_level, 'FULL') AS access_level FROM staff_modules WHERE staff_id = :staff_id");
                 $modStmt->execute([':staff_id' => $staff['id']]);
                 $modRows = $modStmt->fetchAll(PDO::FETCH_ASSOC);
                 $modules = array_map(function($r) {
