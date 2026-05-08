@@ -1331,7 +1331,7 @@ switch ($method) {
                 $stmt = $db->prepare(
                     "SELECT id, gl_code, gl_account_name, gl_type, category, source_ref, source_type, account_number, account_type, customer_name, branch, gross_amount, fee_amount, fee_pct, fee_mode, operator, description, created_at, gl_category, total_debit, total_credit, net_amount, period_start, period_end
                      FROM ({$unionSql}) pl {$where}
-                     ORDER BY "{$sortBy}" {$sortOrder}
+                     ORDER BY {$sortBy} {$sortOrder}
                      LIMIT :pl_limit OFFSET :pl_offset"
                 );
                 foreach ($params as $k => $v) { $stmt->bindValue($k, $v); }
