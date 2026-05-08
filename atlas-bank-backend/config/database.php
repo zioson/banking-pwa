@@ -114,13 +114,16 @@ namespace {
         }
 
         try {
+            // NOTE: We do NOT use the DSN 'options' parameter for search_path because
+            // Render's PostgreSQL driver doesn't properly decode URL-encoded option values
+            // (e.g. %20search_path%3D causes "requires a value" error).
+            // Instead, we set search_path immediately after connecting via SET command.
             $dsn = sprintf(
-                'pgsql:host=%s;port=%s;dbname=%s;sslmode=%s;options=-c%%20search_path%%3D%s',
+                'pgsql:host=%s;port=%s;dbname=%s;sslmode=%s',
                 DB_HOST,
                 DB_PORT,
                 DB_NAME,
-                DB_SSLMODE,
-                urlencode(DB_SCHEMA)
+                DB_SSLMODE
             );
 
             $options = [
@@ -132,7 +135,7 @@ namespace {
 
             $pdo = new \PDO($dsn, DB_USER, DB_PASS, $options);
 
-            // Set search_path as a fallback (in case DSN options param is ignored)
+            // Set search_path to our dedicated schema (primary method — not DSN options)
             $pdo->exec('SET search_path TO ' . $pdo->quote(DB_SCHEMA) . ', public');
         } catch (\PDOException $e) {
             $errorDetails = APP_DEBUG ? $e->getMessage() : 'Database connection failed';
