@@ -817,13 +817,13 @@ function _ensureAuditLogColumns(): void
         }
 
         if (!isset($cols['module'])) {
-            $db->exec("ALTER TABLE audit_logs ADD COLUMN \"module\" VARCHAR(100) DEFAULT \'\'");
+            $db->exec("ALTER TABLE audit_logs ADD COLUMN \"module\" VARCHAR(100) DEFAULT ''");
         }
         if (!isset($cols['category'])) {
-            $db->exec("ALTER TABLE audit_logs ADD COLUMN \"category\" VARCHAR(100) DEFAULT \'\'");
+            $db->exec("ALTER TABLE audit_logs ADD COLUMN \"category\" VARCHAR(100) DEFAULT ''");
         }
         if (!isset($cols['user_agent'])) {
-            $db->exec("ALTER TABLE audit_logs ADD COLUMN \"user_agent\" VARCHAR(500) DEFAULT \'\'");
+            $db->exec("ALTER TABLE audit_logs ADD COLUMN \"user_agent\" VARCHAR(500) DEFAULT ''");
         }
 
         $ensured = true;
