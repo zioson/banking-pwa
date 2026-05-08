@@ -810,18 +810,18 @@ function _ensureAuditLogColumns(): void
  try {
  $db = getDB();
  $cols = [];
- foreach ($db->query('SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'audit_logs'')->fetchAll(PDO::FETCH_ASSOC) as $c) {
+ foreach ($db->query("SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'audit_logs'")->fetchAll(PDO::FETCH_ASSOC) as $c) {
  $cols[strtolower($c['Field'])] = true;
  }
 
  if (!isset($cols['module'])) {
- $db->exec("ALTER TABLE audit_logs ADD COLUMN "module" VARCHAR(100);
+ $db->exec("ALTER TABLE audit_logs ADD COLUMN \"module\" VARCHAR(100);
  }
  if (!isset($cols['category'])) {
- $db->exec("ALTER TABLE audit_logs ADD COLUMN "category" VARCHAR(100);
+ $db->exec("ALTER TABLE audit_logs ADD COLUMN \"category\" VARCHAR(100);
  }
  if (!isset($cols['user_agent'])) {
- $db->exec("ALTER TABLE audit_logs ADD COLUMN "user_agent" VARCHAR(500);
+ $db->exec("ALTER TABLE audit_logs ADD COLUMN \"user_agent\" VARCHAR(500);
  }
 
  $ensured = true;
@@ -1403,7 +1403,7 @@ function _ensureStaffColumns(PDO $db): void
 
  try {
  $cols = [];
- foreach ($db->query('SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff'')->fetchAll(PDO::FETCH_ASSOC) as $c) {
+ foreach ($db->query("SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff'")->fetchAll(PDO::FETCH_ASSOC) as $c) {
  $cols[strtolower($c['Field'])] = true;
  }
 
@@ -1448,7 +1448,7 @@ function _ensureSessionColumns(PDO $db): void
  } catch (PDOException $e) {}
 
  $cols = [];
- $rawCols = $db->query('SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'sessions'')->fetchAll(PDO::FETCH_ASSOC);
+ $rawCols = $db->query("SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'sessions'")->fetchAll(PDO::FETCH_ASSOC);
  foreach ($rawCols as $c) {
  $cols[strtolower($c['Field'])] = $c['Type'] ?? true;
  }
@@ -1460,7 +1460,7 @@ function _ensureSessionColumns(PDO $db): void
  $len = (int)$m[2];
  }
  if ($len > 0 && $len < 64) {
- try { $db->exec("ALTER TABLE "sessions" ALTER COLUMN "id" TYPE VARCHAR(128) USING "id"::VARCHAR(128) NOT NULL"); } catch (PDOException $e) {}
+ try { $db->exec('ALTER TABLE "sessions" ALTER COLUMN "id" TYPE VARCHAR(128) USING "id"::VARCHAR(128) NOT NULL'); } catch (PDOException $e) {}
  }
  }
 
@@ -1618,7 +1618,7 @@ function _ensureLoginHistoryColumns(PDO $db): void
 
  try {
  $cols = [];
- foreach ($db->query('SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'login_history'')->fetchAll(PDO::FETCH_ASSOC) as $c) {
+ foreach ($db->query("SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'login_history'")->fetchAll(PDO::FETCH_ASSOC) as $c) {
  $cols[strtolower($c['Field'])] = true;
  }
 
