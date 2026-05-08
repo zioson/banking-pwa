@@ -36,7 +36,7 @@ try {
  $exists->execute([':key' => $def['key']]);
  if (!$exists->fetch()) {
  $dbSeed->prepare(
- "INSERT INTO settings ("key", name, category, value, description) VALUES (:key, :name, :cat, :val, :desc)"
+ "INSERT INTO settings (\"key\", name, category, value, description) VALUES (:key, :name, :cat, :val, :desc)"
  )->execute([
  ':key' => $def['key'], ':name' => $def['name'], ':cat' => $def['category'],
  ':val' => $def['value'], ':desc' => $def['description']

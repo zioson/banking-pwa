@@ -575,7 +575,7 @@ switch ($method) {
  try {
  $db = getDB();
  // Check for existing key
- $stmt = $db->prepare("SELECT response_json FROM idempotency_keys WHERE "key" = :key AND operator_id = :op_id AND expires_at > NOW() LIMIT 1");
+ $stmt = $db->prepare('SELECT response_json FROM idempotency_keys WHERE "key" = :key AND operator_id = :op_id AND expires_at > NOW() LIMIT 1');
  $stmt->execute([':key' => $idempotencyKey, ':op_id' => $staff['id']]);
  $existing = $stmt->fetch();
  if ($existing) {
@@ -1070,7 +1070,7 @@ switch ($method) {
  try {
  $dbIdem = getDB();
  $respJson = json_encode(['data' => $responseData, 'message' => 'Transaction created successfully.']);
- $stmtIdem = $dbIdem->prepare("INSERT INTO idempotency_keys ("key", operator_id, response_json, expires_at) VALUES (:key, :op_id, :resp, NOW() + INTERVAL '1 hours') ON CONFLICT (id) DO UPDATE SET response_json = EXCLUDED.response_json");
+ $stmtIdem = $dbIdem->prepare('INSERT INTO idempotency_keys ("key", operator_id, response_json, expires_at) VALUES (:key, :op_id, :resp, NOW() + INTERVAL \'1 hours\') ON CONFLICT (id) DO UPDATE SET response_json = EXCLUDED.response_json');
  $stmtIdem->execute([':key' => $idempotencyKey, ':op_id' => $staff['id'], ':resp' => $respJson]);
  } catch (PDOException $e) { /* ignore save error */ }
  }
