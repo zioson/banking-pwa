@@ -29,30 +29,30 @@ function ensureDocumentColumns(PDO $db): void {
  // ── Column renames (schema drift from older SQL dumps) ──
  try {
  $cols = [];
- foreach ($db->query('SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'generated_documents'')->fetchAll(PDO::FETCH_ASSOC) as $c) {
+ foreach ($db->query("SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'generated_documents'")->fetchAll(PDO::FETCH_ASSOC) as $c) {
  $cols[strtolower($c['Field'])] = true;
  }
  // generated_at → created_at
  if (isset($cols['generated_at']) && !isset($cols['created_at'])) {
- $db->exec("ALTER TABLE "generated_documents" RENAME COLUMN "generated_at" TO "created_at" DEFAULT CURRENT_TIMESTAMP");
+ $db->exec('ALTER TABLE "generated_documents" RENAME COLUMN "generated_at" TO "created_at" DEFAULT CURRENT_TIMESTAMP');
  $cols['created_at'] = true;
  }
  // period_from → period_start
  if (isset($cols['period_from']) && !isset($cols['period_start'])) {
- $db->exec("ALTER TABLE "generated_documents" RENAME COLUMN "period_from" TO "period_start"
+ $db->exec("ALTER TABLE \"generated_documents\" RENAME COLUMN \"period_from\" TO \"period_start\"
  $cols['period_start'] = true;
  }
  // period_to → period_end
  if (isset($cols['period_to']) && !isset($cols['period_end'])) {
- $db->exec("ALTER TABLE "generated_documents" RENAME COLUMN "period_to" TO "period_end"
+ $db->exec("ALTER TABLE \"generated_documents\" RENAME COLUMN \"period_to\" TO \"period_end\"
  $cols['period_end'] = true;
  }
  // data → content (add content if missing, copy data if content is empty)
  if (!isset($cols['content'])) {
  if (isset($cols['data'])) {
- $db->exec("ALTER TABLE generated_documents ADD COLUMN "content" TEXT DEFAULT NULL AFTER "status"");
+ $db->exec('ALTER TABLE generated_documents ADD COLUMN "content" TEXT DEFAULT NULL AFTER "status"');
  } else {
- $db->exec("ALTER TABLE generated_documents ADD COLUMN "content" TEXT DEFAULT NULL AFTER "status"");
+ $db->exec('ALTER TABLE generated_documents ADD COLUMN "content" TEXT DEFAULT NULL AFTER "status"');
  }
  }
  } catch (PDOException $e) {
@@ -75,7 +75,7 @@ function ensureDocumentColumns(PDO $db): void {
  try {
  $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'generated_documents' AND column_name = 'type'")->fetch();
  if ($col && str_contains($col['Type'], 'enum(')) {
- $db->exec("ALTER TABLE generated_documents MODIFY COLUMN "type" VARCHAR(20) NOT NULL");
+ $db->exec('ALTER TABLE generated_documents MODIFY COLUMN "type" VARCHAR(20) NOT NULL');
  }
  } catch (PDOException $e) {
  error_log("[Schema] Document type ENUM fix failed: " . $e->getMessage());
@@ -83,7 +83,7 @@ function ensureDocumentColumns(PDO $db): void {
  try {
  $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'generated_documents' AND column_name = 'status'")->fetch();
  if ($col && str_contains($col['Type'], 'enum(')) {
- $db->exec("ALTER TABLE generated_documents MODIFY COLUMN "status" VARCHAR(20);
+ $db->exec("ALTER TABLE generated_documents MODIFY COLUMN \"status\" VARCHAR(20);
  }
  } catch (PDOException $e) {
  error_log("[Schema] Document status ENUM fix failed: " . $e->getMessage());
@@ -91,7 +91,7 @@ function ensureDocumentColumns(PDO $db): void {
 }
 
 $db = getDB();
-$db->exec("CREATE TABLE IF NOT EXISTS "generated_documents" (
+$db->exec("CREATE TABLE IF NOT EXISTS \"generated_documents\" (
  "id" INT PRIMARY KEY,
  "document_number" VARCHAR(100) NOT NULL,
  "type" VARCHAR(20) NOT NULL,

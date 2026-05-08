@@ -1887,8 +1887,8 @@ switch ($method) {
 
  // 4. Settings check
  try {
- $feeSettings = $db->query("SELECT "key", "value" FROM settings WHERE LOWER("key") LIKE 'withdrawal.fee_%' AND LOWER("key") NOT LIKE '%mode%' ORDER BY "key"")->fetchAll(PDO::FETCH_ASSOC);
- $modeSettings = $db->query("SELECT "key", "value" FROM settings WHERE LOWER("key") LIKE 'withdrawal.fee_mode_%' ORDER BY "key"")->fetchAll(PDO::FETCH_ASSOC);
+ $feeSettings = $db->query('SELECT "key", "value" FROM settings WHERE LOWER("key") LIKE \'withdrawal.fee_%\' AND LOWER("key") NOT LIKE \'%mode%\' ORDER BY "key"')->fetchAll(PDO::FETCH_ASSOC);
+ $modeSettings = $db->query('SELECT "key", "value" FROM settings WHERE LOWER("key") LIKE \'withdrawal.fee_mode_%\' ORDER BY "key"')->fetchAll(PDO::FETCH_ASSOC);
  $diagnostics['fee_settings'] = $feeSettings;
  $diagnostics['fee_mode_settings'] = $modeSettings;
  } catch (PDOException $e) {

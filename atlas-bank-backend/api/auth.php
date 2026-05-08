@@ -227,7 +227,7 @@ switch ($method) {
 
  // Get staff modules
  try {
- $modStmt = $db->prepare('SELECT module_name, COALESCE(access_level, 'FULL') AS access_level FROM staff_modules WHERE staff_id = :staff_id');
+ $modStmt = $db->prepare("SELECT module_name, COALESCE(access_level, 'FULL') AS access_level FROM staff_modules WHERE staff_id = :staff_id");
  $modStmt->execute([':staff_id' => $staffId]);
  $modules = array_map(fn($r) => ['name' => $r['module_name'], 'access' => $r['access_level']], $modStmt->fetchAll(PDO::FETCH_ASSOC));
  } catch (PDOException $e) {
@@ -530,7 +530,7 @@ switch ($method) {
 
  // Get staff modules with access levels
  try {
- $modStmt = $db->prepare('SELECT module_name, COALESCE(access_level, 'FULL') AS access_level FROM staff_modules WHERE staff_id = :staff_id');
+ $modStmt = $db->prepare("SELECT module_name, COALESCE(access_level, 'FULL') AS access_level FROM staff_modules WHERE staff_id = :staff_id");
  $modStmt->execute([':staff_id' => $staff['id']]);
  $modRows = $modStmt->fetchAll(PDO::FETCH_ASSOC);
  $modules = array_map(function($r) {

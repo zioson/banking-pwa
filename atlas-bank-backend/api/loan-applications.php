@@ -98,7 +98,7 @@ function laEnsureSchema(PDO $db): void {
  $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'loan_applications' AND column_name = 'status'")->fetch();
  if ($col && str_contains($col['Type'], 'enum(')) {
  if (!str_contains($col['Type'], 'DISBURSED')) {
- $db->exec("ALTER TABLE "loan_applications" ALTER COLUMN "status" TYPE VARCHAR(30) USING "status"::VARCHAR(30) NOT NULL DEFAULT 'PENDING'");
+ $db->exec('ALTER TABLE "loan_applications" ALTER COLUMN "status" TYPE VARCHAR(30) USING "status"::VARCHAR(30) NOT NULL DEFAULT \'PENDING\'');
  }
  }
  } catch (PDOException $e) {

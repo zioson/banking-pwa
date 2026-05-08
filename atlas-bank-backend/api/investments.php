@@ -237,7 +237,7 @@ function invEnsureSchema(PDO $db): void
  invAddCol($db, 'investment_transactions', 'branch', "VARCHAR(100);
  invAddCol($db, 'investment_shareholders', 'branch', "VARCHAR(100);
  try {
- $db->exec("UPDATE "investment_shareholders" s SET s.branch = st.department FROM "staff" st WHERE st.id = s.linked_staff_id (s.branch IS NULL OR s.branch = '') AND st.department IS NOT NULL AND st.department <> ''")
+ $db->exec('UPDATE "investment_shareholders" s SET s.branch = st.department FROM "staff" st WHERE st.id = s.linked_staff_id (s.branch IS NULL OR s.branch = \'\') AND st.department IS NOT NULL AND st.department <> \'\'')
  } catch (Throwable $_) {}
 
  // Backfill legacy aggregated holdings into one purchase-lot per cycle/shareholder

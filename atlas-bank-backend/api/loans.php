@@ -296,7 +296,7 @@ function loanEnsureSchema(PDO $db): void {
  if ($col) {
  $col2 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'loan_schedule' AND column_name = 'due_date'")->fetch();
  if (!$col2) {
- $db->exec("ALTER TABLE "loan_schedule" RENAME COLUMN "due" TO "due_date" NOT NULL");
+ $db->exec('ALTER TABLE "loan_schedule" RENAME COLUMN "due" TO "due_date" NOT NULL');
  }
  }
  } catch (PDOException $e) {
@@ -313,7 +313,7 @@ function loanEnsureSchema(PDO $db): void {
  try {
  $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'loans' AND column_name = 'repayment_mode'")->fetch();
  if ($col && str_contains($col['Type'], 'enum(')) {
- $db->exec("ALTER TABLE "loans" ALTER COLUMN "repayment_mode" TYPE VARCHAR(30) USING "repayment_mode"::VARCHAR(30) NOT NULL DEFAULT 'SCHEDULED'");
+ $db->exec('ALTER TABLE "loans" ALTER COLUMN "repayment_mode" TYPE VARCHAR(30) USING "repayment_mode"::VARCHAR(30) NOT NULL DEFAULT \'SCHEDULED\'');
  }
  } catch (PDOException $e) {
  error_log("[Loans Schema] ALTER repayment_mode failed: " . $e->getMessage());
@@ -324,7 +324,7 @@ function loanEnsureSchema(PDO $db): void {
  $col2 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'loans' AND column_name = 'status'")->fetch();
  if ($col2 && str_contains($col2['Type'], 'enum(')) {
  if (!str_contains($col2['Type'], "'UNDER_REVIEW'")) {
- $db->exec("ALTER TABLE "loans" ALTER COLUMN "status" TYPE VARCHAR(30) USING "status"::VARCHAR(30) NOT NULL DEFAULT 'PENDING'");
+ $db->exec('ALTER TABLE "loans" ALTER COLUMN "status" TYPE VARCHAR(30) USING "status"::VARCHAR(30) NOT NULL DEFAULT \'PENDING\'');
  }
  }
  } catch (PDOException $e) {
@@ -358,7 +358,7 @@ function loanEnsureSchema(PDO $db): void {
  $schCol = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'loan_schedule' AND column_name = 'status'")->fetch();
  if ($schCol && str_contains($schCol['Type'], 'enum(')) {
  if (!str_contains($schCol['Type'], 'UPCOMING')) {
- $db->exec("ALTER TABLE "loan_schedule" ALTER COLUMN "status" TYPE VARCHAR(30) USING "status"::VARCHAR(30) NOT NULL DEFAULT 'UPCOMING'");
+ $db->exec('ALTER TABLE "loan_schedule" ALTER COLUMN "status" TYPE VARCHAR(30) USING "status"::VARCHAR(30) NOT NULL DEFAULT \'UPCOMING\'');
  }
  }
  } catch (PDOException $e) {

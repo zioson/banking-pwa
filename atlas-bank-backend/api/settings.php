@@ -28,16 +28,16 @@ if ($method === 'GET') {
 $db = getDB();
 
 // ── Ensure table exists with ALL required columns ──
-$db->exec("CREATE TABLE IF NOT EXISTS "settings" (
+$db->exec("CREATE TABLE IF NOT EXISTS \"settings\" (
  "id" INT PRIMARY KEY,
  "key" VARCHAR(191) NOT NULL,
  "name" VARCHAR(191);
 
 // ── Self-heal: add columns that may be missing from older installs ──
 foreach ([
- "ALTER TABLE "settings" ADD COLUMN "description" TEXT DEFAULT NULL AFTER "value_data"",
- "ALTER TABLE "settings" ADD COLUMN "effective_from" DATE DEFAULT NULL AFTER "description"",
- "ALTER TABLE "settings" ADD COLUMN "requires_approval" SMALLINT NOT NULL DEFAULT 0 AFTER "effective_from""
+ "ALTER TABLE \\"settings\\" ADD COLUMN \\"description\\" TEXT DEFAULT NULL AFTER \\"value_data\\"",
+ "ALTER TABLE \\"settings\\" ADD COLUMN \\"effective_from\\" DATE DEFAULT NULL AFTER \\"description\\"",
+ "ALTER TABLE \\"settings\\" ADD COLUMN \\"requires_approval\\" SMALLINT NOT NULL DEFAULT 0 AFTER \\"effective_from\\""
 ] as $alterSql) {
  try { $db->exec($alterSql); } catch (PDOException $e) { /* column already exists */ }
 }
@@ -120,7 +120,7 @@ $operationalDefaults = [
 ];
 $seedCheckStmt = $db->prepare('SELECT 1 FROM settings WHERE "key" = :key LIMIT 1');
 $seedInsertStmt = $db->prepare(
- "INSERT INTO settings ("key", name, category, value_data, description, requires_approval)
+ "INSERT INTO settings (\"key\", name, category, value_data, description, requires_approval)
  VALUES (:key, :name, :cat, :val, :desc, :reqApp)"
 );
 // ── Self-heal: repair corrupted settings where name was overwritten with the key ──
@@ -346,7 +346,7 @@ switch ($method) {
  $reqApp = isset($input['requires_approval']) ? (int)$input['requires_approval'] : 0;
 
  $stmt = $db->prepare(
- "INSERT INTO settings ("key", name, category, value_data, description, effective_from, requires_approval)
+ "INSERT INTO settings (\"key\", name, category, value_data, description, effective_from, requires_approval)
  VALUES (:key, :name, :cat, :value_data, :desc, :efrom, :reqApp)"
  );
  $stmt->execute([
@@ -376,7 +376,7 @@ switch ($method) {
  }
  $setClauses[] = ""updated_at" = NOW()";
 
- $sql = "UPDATE settings SET " . implode(', ', $setClauses) . " WHERE "key" = :key";
+ $sql = "UPDATE settings SET " . implode(', ', $setClauses) . " WHERE \"key\" = :key";
  $db->prepare($sql)->execute($params);
  }
 

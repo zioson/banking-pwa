@@ -20,7 +20,7 @@ if ($method === 'PUT') {
 }
 
 $db = getDB();
-$db->exec("CREATE TABLE IF NOT EXISTS "bank_branding" (
+$db->exec("CREATE TABLE IF NOT EXISTS \"bank_branding\" (
  "id" INT PRIMARY KEY,
  "bank_name" VARCHAR(255) NOT NULL DEFAULT '',
  "bank_name_short" VARCHAR(100);

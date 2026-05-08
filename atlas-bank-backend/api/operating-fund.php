@@ -80,7 +80,7 @@ function ensureGeneralLedgerColumns(PDO $db): void {
  )->fetch();
  if (!$colTransactionType) {
  $db->exec(
- "ALTER TABLE general_ledger ADD COLUMN "transaction_type" VARCHAR(50);
+ "ALTER TABLE general_ledger ADD COLUMN \"transaction_type\" VARCHAR(50);
  }
 
  // contra_account — the other leg of the double-entry pair
@@ -89,7 +89,7 @@ function ensureGeneralLedgerColumns(PDO $db): void {
  )->fetch();
  if (!$colContraAccount) {
  $db->exec(
- "ALTER TABLE general_ledger ADD COLUMN "contra_account" VARCHAR(20);
+ "ALTER TABLE general_ledger ADD COLUMN \"contra_account\" VARCHAR(20);
  }
 }
 

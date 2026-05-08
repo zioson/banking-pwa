@@ -20,13 +20,13 @@ $sub = $_ROUTE['subResource'] ?? null; // e.g. policies/{id}/revisions, policies
 $db = getDB();
 
 // ── Main policies table ──
-$db->exec("CREATE TABLE IF NOT EXISTS "policies" (
+$db->exec("CREATE TABLE IF NOT EXISTS \"policies\" (
  "id" INT PRIMARY KEY,
  "code" VARCHAR(50) NOT NULL,
  "version" VARCHAR(20);
 
 // ── Revisions history table ──
-$db->exec("CREATE TABLE IF NOT EXISTS "policy_revisions" (
+$db->exec("CREATE TABLE IF NOT EXISTS \"policy_revisions\" (
  "id" INT PRIMARY KEY,
  "policy_id" INT NOT NULL,
  "revision" INT NOT NULL DEFAULT 1,
@@ -36,38 +36,38 @@ $db->exec("CREATE TABLE IF NOT EXISTS "policy_revisions" (
 // NOTE: No AFTER clauses — they fail if the reference column doesn't exist yet,
 // causing cascading failures for subsequent columns.
 foreach ([
- "ALTER TABLE "policies" ADD COLUMN "version" VARCHAR(20); } catch (PDOException $e) { /* column already exists */ }
+ "ALTER TABLE \\"policies\\" ADD COLUMN \"version\" VARCHAR(20); } catch (PDOException $e) { /* column already exists */ }
 }
 
 // Migrate old→ uk_code_version(code, version)
 try {
- $db->exec("ALTER TABLE "policies" DROP INDEX "uk_code"");
+ $db->exec('ALTER TABLE "policies" DROP INDEX "uk_code"');
 } catch (PDOException $e) { /* index doesn't exist or already removed */ }
 try {
- $db->exec("ALTER TABLE "policies" ADD UNIQUE KEY "uk_code_version" ("code", "version")");
+ $db->exec('ALTER TABLE "policies" ADD UNIQUE KEY "uk_code_version" ("code", "version")');
 } catch (PDOException $e) { /* index already exists */ }
 
 // Add missing indexes
 foreach ([
- "ALTER TABLE "policies" ADD INDEX "idx_status" ("status")",
- "ALTER TABLE "policies" ADD INDEX "idx_effective_to" ("effective_to")"
+ "ALTER TABLE \\"policies\\" ADD INDEX \\"idx_status\\" (\\"status\\")",
+ "ALTER TABLE \\"policies\\" ADD INDEX \\"idx_effective_to\\" (\\"effective_to\\")"
 ] as $idxSql) {
  try { $db->exec($idxSql); } catch (PDOException $e) { /* index already exists */ }
 }
 
 // Migrate old column name effective_date → effective_from if it exists
 try {
- $db->exec("ALTER TABLE "policies" CHANGE COLUMN "effective_date" "effective_from" DATE DEFAULT NULL");
+ $db->exec('ALTER TABLE "policies" CHANGE COLUMN "effective_date" "effective_from" DATE DEFAULT NULL');
 } catch (PDOException $e) { /* column doesn't exist or already renamed */ }
 
 // Ensure effective_to column exists and has proper default
 try {
- $db->exec("ALTER TABLE "policies" MODIFY COLUMN "effective_to" DATE DEFAULT NULL");
+ $db->exec('ALTER TABLE "policies" MODIFY COLUMN "effective_to" DATE DEFAULT NULL');
 } catch (PDOException $e) { /* ignore */ }
 
 // Ensure status column has proper default
 try {
- $db->exec("ALTER TABLE "policies" MODIFY COLUMN "status" VARCHAR(20);
+ $db->exec("ALTER TABLE \"policies\" MODIFY COLUMN \"status\" VARCHAR(20);
 } catch (PDOException $e) { /* ignore */ }
 
 // ════════════════════════════════════════════════════════════════

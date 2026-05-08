@@ -98,7 +98,7 @@ switch ($method) {
  try {
  $statusCol = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'approvals' AND column_name = 'status'")->fetch();
  if ($statusCol && str_contains($statusCol['Type'], 'enum(') && !str_contains($statusCol['Type'], 'CANCELLED')) {
- $db->exec("ALTER TABLE "approvals" ALTER COLUMN "status" TYPE VARCHAR(30) USING "status"::VARCHAR(30) NOT NULL DEFAULT 'PENDING'");
+ $db->exec('ALTER TABLE "approvals" ALTER COLUMN "status" TYPE VARCHAR(30) USING "status"::VARCHAR(30) NOT NULL DEFAULT \'PENDING\'');
  }
  } catch (PDOException $e) {
  error_log("[Approvals Schema] status ENUM fix failed: " . $e->getMessage());

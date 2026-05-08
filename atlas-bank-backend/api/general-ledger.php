@@ -42,7 +42,7 @@ function ensureGeneralLedgerTable(PDO $db): void {
  // but descriptions like 'Operating Fund - Bank' need more space
  $colType = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'general_ledger' AND column_name = 'contra_account'")->fetch();
  if ($colType && strpos($colType['Type'], 'VARCHAR(10)') !== false) {
- $db->exec("ALTER TABLE "general_ledger" ALTER COLUMN "contra_account" TYPE VARCHAR(50); USING "contra_account"::VARCHAR(50);
+ $db->exec("ALTER TABLE \"general_ledger\" ALTER COLUMN \"contra_account\" TYPE VARCHAR(50); USING \"contra_account\"::VARCHAR(50);
  }
  }
  // ★ Safe migration: add branch column if missing (for branch-level GL filtering)

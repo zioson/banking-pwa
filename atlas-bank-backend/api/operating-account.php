@@ -143,7 +143,7 @@ function opEnsureTransactionsTable(PDO $db): void {
  if ($col) {
  $col2 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'operating_account_transactions' AND column_name = 'created_at'")->fetch();
  if (!$col2) {
- $db->exec("ALTER TABLE "operating_account_transactions" RENAME COLUMN "timestamp" TO "created_at" DEFAULT CURRENT_TIMESTAMP");
+ $db->exec('ALTER TABLE "operating_account_transactions" RENAME COLUMN "timestamp" TO "created_at" DEFAULT CURRENT_TIMESTAMP');
  }
  }
 }

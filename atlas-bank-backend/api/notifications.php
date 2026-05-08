@@ -27,18 +27,18 @@ $id = $_ROUTE['id'];
 // Auto-create and migrate notifications table
 try {
  $db = getDB();
- $db->exec("CREATE TABLE IF NOT EXISTS "notifications" (
+ $db->exec("CREATE TABLE IF NOT EXISTS \"notifications\" (
  "id" INT PRIMARY KEY,
  "type" VARCHAR(100);
 
  // Migrate: add columns if table was created by CANONICAL_SCHEMA (which omits them)
  $colCheck = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'notifications' AND column_name = 'is_read'")->fetch();
  if (!$colCheck) {
- $db->exec("ALTER TABLE "notifications" ADD COLUMN "is_read" SMALLINT;
+ $db->exec("ALTER TABLE \"notifications\" ADD COLUMN \"is_read\" SMALLINT;
  }
  $colCheck2 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'notifications' AND column_name = 'created_at'")->fetch();
  if (!$colCheck2) {
- $db->exec("ALTER TABLE "notifications" ADD COLUMN "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP AFTER "is_read"");
+ $db->exec('ALTER TABLE "notifications" ADD COLUMN "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP AFTER "is_read"');
  }
 } catch (PDOException $e) {
  error_log('[Notifications Schema] Migration failed: ' . $e->getMessage());
@@ -152,7 +152,7 @@ switch ($method) {
  }
 
  // Update all unread notifications for this staff member
- $stmt = $db->query("UPDATE "notifications" SET "status" = 'READ' WHERE "target_staff_id" = " . (int)$staff['id'] . " AND "status" != 'READ'");
+ $stmt = $db->query('UPDATE "notifications" SET "status" = \'READ\' WHERE "target_staff_id" = ' . (int)$staff['id'] . ' AND "status" != \'READ\'');
  $updatedCount = $stmt->rowCount();
 
  jsonResponse([
