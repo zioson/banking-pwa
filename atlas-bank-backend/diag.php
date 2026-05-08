@@ -28,16 +28,7 @@ foreach ($envVars as $v) {
     $results['checks']['env_vars'][$v] = $val !== false ? ('set(' . strlen($val) . ' chars)') : 'NOT SET';
 }
 
-// ── 3. Constants Check ──
-$results['checks']['constants'] = [
-    'DB_HOST' => defined('DB_HOST') ? DB_HOST : 'not defined',
-    'DB_NAME' => defined('DB_NAME') ? DB_NAME : 'not defined',
-    'DB_USER' => defined('DB_USER') ? DB_USER : 'not defined',
-    'DB_SCHEMA' => defined('DB_SCHEMA') ? DB_SCHEMA : 'not defined',
-    'DB_SSLMODE' => defined('DB_SSLMODE') ? DB_SSLMODE : 'not defined',
-];
-
-// ── 4. Database Connection ──
+// ── 3. Database Connection ──
 try {
     $host = getenv('DB_HOST') ?: 'dpg-d7ungdtb910c73ep2i20-a.oregon-postgres.render.com';
     $port = getenv('DB_PORT') ?: '5432';
@@ -60,7 +51,6 @@ try {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ]);
 
-    // Set search_path after connection (not via DSN options — that causes encoding issues)
     $pdo->exec('SET search_path TO ' . $pdo->quote($schema) . ', public');
 
     $results['checks']['database'] = [
@@ -68,19 +58,15 @@ try {
         'dsn_used' => preg_replace('/password=[^;]+/', 'password=***', $dsn),
     ];
 
-    // Test query
     $ver = $pdo->query('SELECT version()')->fetchColumn();
     $results['checks']['database']['version'] = substr($ver, 0, 80);
 
-    // Check schema
     $schemaCheck = $pdo->query("SELECT schema_name FROM information_schema.schemata WHERE schema_name = '{$schema}'")->fetchColumn();
     $results['checks']['database']['schema_exists'] = $schemaCheck ? true : false;
 
-    // Check tables count
     $tableCount = $pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '{$schema}'")->fetchColumn();
     $results['checks']['database']['table_count'] = (int)$tableCount;
 
-    // Check staff table
     try {
         $staffCount = $pdo->query("SELECT COUNT(*) FROM {$schema}.staff")->fetchColumn();
         $results['checks']['database']['staff_count'] = (int)$staffCount;
@@ -88,13 +74,8 @@ try {
         $results['checks']['database']['staff_error'] = $e->getMessage();
     }
 
-    // Check sessions table
-    try {
-        $sessionsExists = $pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '{$schema}' AND table_name = 'sessions'")->fetchColumn();
-        $results['checks']['database']['sessions_table_exists'] = (int)$sessionsExists > 0;
-    } catch (PDOException $e) {
-        $results['checks']['database']['sessions_error'] = $e->getMessage();
-    }
+    $sessionsExists = $pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '{$schema}' AND table_name = 'sessions'")->fetchColumn();
+    $results['checks']['database']['sessions_table_exists'] = (int)$sessionsExists > 0;
 
     $pdo = null;
 
@@ -106,38 +87,27 @@ try {
     ];
 }
 
-// ── 5. File Include Test ──
-$files = [
-    'config/constants.php',
-    'config/database.php',
-    'config/cors.php',
-    'middleware/cors.php',
-    'middleware/csrf.php',
-    'middleware/auth.php',
-    'middleware/rbac.php',
-    'middleware/rate_limit.php',
-    'includes/Response.php',
-    'includes/helpers.php',
-    'includes/Auth.php',
-    'includes/Middleware.php',
-    'includes/AuditLogger.php',
-    'api/auth.php',
-    'router.php',
-];
-
-$results['checks']['files'] = [];
-foreach ($files as $f) {
-    $path = __DIR__ . '/' . $f;
-    $results['checks']['files'][$f] = [
-        'exists' => file_exists($path),
-        'readable' => is_readable($path),
-        'size' => file_exists($path) ? filesize($path) : 0,
-    ];
-}
-
-// ── 6. PHP Syntax Check on critical files ──
+// ── 4. PHP Syntax Check on critical files ──
 $results['checks']['syntax'] = [];
-$criticalFiles = ['config/database.php', 'api/auth.php', 'router.php', 'includes/helpers.php', 'middleware/auth.php'];
+$criticalFiles = [
+    'config/database.php', 'api/auth.php', 'router.php',
+    'includes/helpers.php', 'middleware/auth.php',
+    'api/transactions.php', 'api/policies.php', 'api/settings.php',
+    'api/notifications.php', 'api/documents.php', 'api/reports.php',
+    'api/general-ledger.php', 'api/branding.php', 'api/loans.php',
+    'api/operating-fund.php', 'api/accounts.php', 'api/staff.php',
+    'api/customers.php', 'api/approvals.php', 'api/expenses.php',
+    'api/investments.php', 'api/branches.php', 'api/audit.php',
+    'api/deductions.php', 'api/loan-applications.php', 'api/loan-fund-accounts.php',
+    'api/operating-account.php', 'api/chart-of-accounts.php',
+    'api/client-auth.php', 'api/client-portal.php', 'api/client-statements.php',
+    'api/search.php',
+    'includes/Response.php', 'includes/Auth.php', 'includes/Middleware.php',
+    'includes/AuditLogger.php',
+    'middleware/csrf.php', 'middleware/cors.php', 'middleware/rbac.php',
+    'middleware/rate_limit.php', 'middleware/client_auth.php',
+    'config/constants.php', 'config/cors.php',
+];
 foreach ($criticalFiles as $f) {
     $path = __DIR__ . '/' . $f;
     if (file_exists($path)) {
@@ -150,27 +120,9 @@ foreach ($criticalFiles as $f) {
     }
 }
 
-// ── 7. Session Test ──
-try {
-    session_name('ATLAS_BANK_SESSION');
-    session_start();
-    $results['checks']['session'] = [
-        'status' => 'OK',
-        'id' => session_id(),
-        'save_path' => session_save_path(),
-    ];
-    session_write_close();
-} catch (Exception $e) {
-    $results['checks']['session'] = [
-        'status' => 'FAILED',
-        'error' => $e->getMessage()
-    ];
-}
-
-// ── 8. Try loading the full auth pipeline ──
+// ── 5. Auth Pipeline Test ──
 $results['checks']['auth_pipeline'] = [];
 try {
-    // Simulate what router.php does
     require_once __DIR__ . '/config/constants.php';
     $results['checks']['auth_pipeline']['step1_constants'] = 'OK';
 
@@ -189,7 +141,6 @@ try {
     require_once __DIR__ . '/includes/helpers.php';
     $results['checks']['auth_pipeline']['step6_helpers'] = 'OK';
 
-    // Test getDB()
     $db = getDB();
     $results['checks']['auth_pipeline']['step7_getdb'] = 'OK - got PDO connection';
 
