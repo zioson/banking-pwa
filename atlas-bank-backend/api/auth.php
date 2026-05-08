@@ -24,6 +24,9 @@ require_once __DIR__ . '/../middleware/csrf.php';
 // They can be changed by admins via the System Settings UI.
 try {
     $dbSeed = getDB();
+    // NOTE: Settings table uses 'value_data' column (PG migration artifact). 
+    // The getSetting() function in helpers.php handles both 'value' and 'value_data'.
+    // INSERT statements use 'value_data' to match the actual column name.
     $securityDefaults = [
         ['key' => 'security.max_login_attempts', 'name' => 'Max Login Attempts', 'category' => 'Security', 'value' => '5', 'description' => 'Number of failed login attempts before account is temporarily locked.'],
         ['key' => 'security.lockout_duration', 'name' => 'Lockout Duration (minutes)', 'category' => 'Security', 'value' => '30', 'description' => 'Duration in minutes that a locked account remains locked before auto-unlock.'],
@@ -36,7 +39,7 @@ try {
             $exists->execute([':key' => $def['key']]);
             if (!$exists->fetch()) {
                 $dbSeed->prepare(
-                    "INSERT INTO settings (\"key\", name, category, value, description) VALUES (:key, :name, :cat, :val, :desc)"
+                    "INSERT INTO settings (\"key\", name, category, value_data, description) VALUES (:key, :name, :cat, :val, :desc)"
                 )->execute([
                     ':key' => $def['key'], ':name' => $def['name'], ':cat' => $def['category'],
                     ':val' => $def['value'], ':desc' => $def['description']

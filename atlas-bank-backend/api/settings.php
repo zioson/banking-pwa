@@ -28,18 +28,20 @@ if ($method === 'GET') {
 $db = getDB();
 
 // ── Ensure table exists with ALL required columns ──
-$db->exec("CREATE TABLE IF NOT EXISTS \"settings\" (
-    \"id\" SERIAL PRIMARY KEY,
-    \"key\" VARCHAR(191) NOT NULL,
-    \"name\" VARCHAR(191) DEFAULT NULL,
-    \"category\" VARCHAR(100) NOT NULL DEFAULT 'General',
-    \"value\" TEXT NOT NULL,
-    \"description\" TEXT DEFAULT NULL,
-    \"effective_from\" DATE DEFAULT NULL,
-    \"requires_approval\" BOOLEAN NOT NULL DEFAULT FALSE,
-    \"created_at\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    \"updated_at\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (\"key\")
+// NOTE: The actual table uses 'value_data' column (from PG migration). We create with value_data
+// so CREATE TABLE IF NOT EXISTS won't conflict with the existing table.
+$db->exec("CREATE TABLE IF NOT EXISTS settings (
+    id SERIAL PRIMARY KEY,
+    key VARCHAR(191) NOT NULL,
+    name VARCHAR(191) DEFAULT NULL,
+    category VARCHAR(100) NOT NULL DEFAULT 'General',
+    value_data TEXT DEFAULT '',
+    description TEXT DEFAULT NULL,
+    effective_from DATE DEFAULT NULL,
+    requires_approval BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (key)
 )");
 try { $db->exec('CREATE INDEX IF NOT EXISTS idx_settings_category ON "settings" (category)'); } catch (PDOException $e) {}
 
@@ -130,7 +132,7 @@ $operationalDefaults = [
 ];
 $seedCheckStmt = $db->prepare('SELECT 1 FROM settings WHERE "key" = :key LIMIT 1');
 $seedInsertStmt = $db->prepare(
-    'INSERT INTO settings ("key", name, category, value, description, requires_approval)
+    'INSERT INTO settings ("key", name, category, value_data, description, requires_approval)
      VALUES (:key, :name, :cat, :val, :desc, :reqApp)'
 );
 // ── Self-heal: repair corrupted settings where name was overwritten with the key ──
@@ -356,7 +358,7 @@ switch ($method) {
                 $reqApp = isset($input['requires_approval']) ? (int)$input['requires_approval'] : 0;
 
                 $stmt = $db->prepare(
-                    'INSERT INTO settings ("key", name, category, value, description, effective_from, requires_approval)
+                    'INSERT INTO settings ("key", name, category, value_data, description, effective_from, requires_approval)
                      VALUES (:key, :name, :cat, :value, :desc, :efrom, :reqApp)'
                 );
                 $stmt->execute([
@@ -373,7 +375,7 @@ switch ($method) {
                 // This prevents callers that send only {key, value} from
                 // overwriting name, category, description, requires_approval
                 // with defaults.
-                $setClauses = ['"value" = :value'];
+                $setClauses = ['value_data = :value'];
                 $params = [':key' => $key, ':value' => $value];
 
                 foreach (['name', 'category', 'description', 'effective_from', 'requires_approval'] as $field) {
