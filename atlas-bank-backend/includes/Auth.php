@@ -69,7 +69,7 @@ class Auth
         // 1. Look up the staff member
         $user = $this->db->fetch(
             'SELECT id, username, password_hash, role, full_name, email, branch_id,
-                    status, account_locked, mfa_required, failed_login_attempts, locked_until
+                    employment_status, account_locked, mfa_required, failed_login_attempts, locked_until
              FROM staff
              WHERE username = :username',
             ['username' => $username]
@@ -82,7 +82,7 @@ class Auth
 
         // 2. Check if account is disabled
         // ★ FIX (FIN-2b-003/015): Column name corrected to match actual DB schema
-        if ($user['status'] !== 'ACTIVE') {
+        if ($user['employment_status'] !== 'ACTIVE') {
             return ['success' => false, 'message' => 'Account is disabled. Contact your administrator.'];
         }
 
@@ -196,7 +196,7 @@ class Auth
         // Verify the session is still active in the database
         // ★ FIX (FIN-2b-003/015): Column names corrected to match actual DB schema
         $session = $this->db->fetch(
-            'SELECT s.*, st.username, st.role, st.full_name, st.email, st.branch_id, st.status
+            'SELECT s.*, st.username, st.role, st.full_name, st.email, st.branch_id, st.employment_status
              FROM sessions s
              JOIN staff st ON s.staff_id = st.id
              WHERE s.id = :jti AND s.expires_at > NOW()',
@@ -208,7 +208,7 @@ class Auth
         }
 
         // ★ FIX (FIN-2b-003/015): Column name corrected to match actual DB schema
-        if ($session['status'] !== 'ACTIVE') {
+        if ($session['employment_status'] !== 'ACTIVE') {
             return ['valid' => false, 'error' => 'Account has been disabled.'];
         }
 
@@ -302,7 +302,7 @@ class Auth
         // Now requires a valid TOTP secret to be stored on the user record.
         $user = $this->db->fetch(
             'SELECT id, mfa_secret, role, full_name, email, branch_id
-             FROM staff WHERE id = :id AND status = :status',
+             FROM staff WHERE id = :id AND employment_status = :status',
             // ★ FIX (FIN-2b-003/015): Column name corrected to match actual DB schema
             ['id' => $userId, 'status' => 'ACTIVE']
         );
@@ -476,8 +476,8 @@ class Auth
     {
         // Verify the admin user has Manager or Auditor role
         $admin = $this->db->fetch(
-            'SELECT role, branch_id FROM staff WHERE id = :id AND status = :status',
-            ['id' => $adminUserId, 'status' => 'active']
+            'SELECT role, branch_id FROM staff WHERE id = :id AND employment_status = :status',
+            ['id' => $adminUserId, 'status' => 'ACTIVE']
         );
 
         if ($admin === null) {
@@ -490,7 +490,7 @@ class Auth
 
         // Verify target user exists
         $target = $this->db->fetch(
-            'SELECT username, status FROM staff WHERE id = :id',
+            'SELECT username, employment_status FROM staff WHERE id = :id',
             ['id' => $targetUserId]
         );
 
@@ -735,7 +735,7 @@ class Auth
     {
         $this->db->query(
             // ★ FIX (FIN-2b-003/015): Column name corrected to match actual DB schema
-            'UPDATE staff SET failed_login_attempts = FALSE, account_locked = FALSE, locked_until = NULL WHERE id = :id',
+            'UPDATE staff SET failed_login_attempts = 0, account_locked = FALSE, locked_until = NULL WHERE id = :id',
             ['id' => $userId]
         );
     }
