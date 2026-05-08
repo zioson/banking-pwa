@@ -32,11 +32,11 @@ try {
     ];
     foreach ($securityDefaults as $def) {
         try {
-            $exists = $dbSeed->prepare('SELECT 1 FROM settings WHERE `key` = :key LIMIT 1');
+            $exists = $dbSeed->prepare('SELECT 1 FROM settings WHERE "key" = :key LIMIT 1');
             $exists->execute([':key' => $def['key']]);
             if (!$exists->fetch()) {
                 $dbSeed->prepare(
-                    "INSERT INTO settings (`key`, name, category, value, description) VALUES (:key, :name, :cat, :val, :desc)"
+                    "INSERT INTO settings (\"key\", name, category, value_data, description) VALUES (:key, :name, :cat, :val, :desc)"
                 )->execute([
                     ':key' => $def['key'], ':name' => $def['name'], ':cat' => $def['category'],
                     ':val' => $def['value'], ':desc' => $def['description']
@@ -174,7 +174,7 @@ switch ($method) {
                 $staffId = (int)$pending['staff_id'];
 
                 // Get staff record
-                $staffStmt = $db->prepare('SELECT * FROM staff WHERE id = :id AND employment_status = "ACTIVE" LIMIT 1');
+                $staffStmt = $db->prepare('SELECT * FROM staff WHERE id = :id AND employment_status = \'ACTIVE\' LIMIT 1');
                 $staffStmt->execute([':id' => $staffId]);
                 $staff = $staffStmt->fetch();
 
@@ -227,7 +227,7 @@ switch ($method) {
 
                 // Get staff modules
                 try {
-                    $modStmt = $db->prepare('SELECT module_name, COALESCE(access_level, "FULL") AS access_level FROM staff_modules WHERE staff_id = :staff_id');
+                    $modStmt = $db->prepare('SELECT module_name, COALESCE(access_level, \'FULL\') AS access_level FROM staff_modules WHERE staff_id = :staff_id');
                     $modStmt->execute([':staff_id' => $staffId]);
                     $modules = array_map(fn($r) => ['name' => $r['module_name'], 'access' => $r['access_level']], $modStmt->fetchAll(PDO::FETCH_ASSOC));
                 } catch (PDOException $e) {
@@ -264,12 +264,12 @@ switch ($method) {
 
         // Login endpoint
         $input = getRequestInput();
-        $username = sanitize($input['username'] ?? '');
+        $loginIdentifier = sanitize($input['username'] ?? '');
         $password = $input['password'] ?? '';
 
-        if (empty($username) || empty($password)) {
+        if (empty($loginIdentifier) || empty($password)) {
             validationError([
-                'username' => empty($username) ? 'Username is required.' : null,
+                'username' => empty($loginIdentifier) ? 'Username is required.' : null,
                 'password' => empty($password) ? 'Password is required.' : null
             ], 'Username and password are required.');
         }
@@ -278,53 +278,62 @@ switch ($method) {
         require_once __DIR__ . '/../middleware/rate_limit.php';
         $loginIp = getClientIp();
         requireRateLimit('login:' . $loginIp, 10, 300); // 10 attempts per 5 minutes per IP
-        requireRateLimit('login_user:' . $username, 5, 300); // 5 attempts per 5 minutes per username
+        requireRateLimit('login_user:' . strtolower($loginIdentifier), 5, 300); // 5 attempts per 5 minutes per username/email
 
         $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
         $loginFingerprint = computeDeviceFingerprint($userAgent);
 
         try {
             $db = getDB();
+            // Ensure enterprise auth columns exist before login writes.
+            _ensureStaffColumns($db);
             $stmt = $db->prepare(
-                'SELECT * FROM staff WHERE username = :username AND employment_status = :status'
+                'SELECT * FROM staff WHERE (username = :login_username OR email = :login_email) AND employment_status = :status LIMIT 1'
             );
-            $stmt->execute([':username' => $username, ':status' => 'ACTIVE']);
+            $stmt->execute([
+                ':login_username' => $loginIdentifier,
+                ':login_email' => $loginIdentifier,
+                ':status' => 'ACTIVE'
+            ]);
             $staff = $stmt->fetch();
+            $canonicalUsername = $staff['username'] ?? $loginIdentifier;
 
             if (!$staff || !password_verify($password, $staff['password_hash'])) {
                 // Failed login — log the reason for debugging (without revealing to client)
                 if (!$staff) {
-                    error_log('[Auth] Login failed for username="' . $username . '" — no ACTIVE staff record found');
+                    error_log('[Auth] Login failed for identifier="' . $loginIdentifier . '" — no ACTIVE staff record found');
                 } else {
-                    error_log('[Auth] Login failed for username="' . $username . '" (staff_id=' . $staff['id'] . ') — password mismatch');
+                    error_log('[Auth] Login failed for identifier="' . $loginIdentifier . '" (staff_id=' . $staff['id'] . ') — password mismatch');
                 }
                 // Failed login
-                recordLoginHistory($username, 'FAILURE', $loginIp, $userAgent, 'MEDIUM');
+                recordLoginHistory($canonicalUsername, 'FAILURE', $loginIp, $userAgent, 'MEDIUM');
 
                 // Increment failed attempts
-                $updateStmt = $db->prepare(
-                    'UPDATE staff SET failed_login_attempts = failed_login_attempts + 1 WHERE username = :username'
-                );
-                $updateStmt->execute([':username' => $username]);
-
-                // Check if should lock
-                $checkStmt = $db->prepare(
-                    'SELECT failed_login_attempts FROM staff WHERE username = :username'
-                );
-                $checkStmt->execute([':username' => $username]);
-                $attemptData = $checkStmt->fetch();
-                $maxAttempts = (int)getSetting($db, 'security.max_login_attempts', 5);
-
-                if ((int)$attemptData['failed_login_attempts'] >= $maxAttempts) {
-                    $lockMinutes = (int)getSetting($db, 'security.lockout_duration', 30);
-                    $lockUntil = date('Y-m-d H:i:s', time() + ($lockMinutes * 60));
-                    $lockStmt = $db->prepare(
-                        'UPDATE staff SET account_locked = 1, locked_until = :locked_until WHERE username = :username'
+                if ($staff) {
+                    $updateStmt = $db->prepare(
+                        'UPDATE staff SET failed_login_attempts = failed_login_attempts + 1 WHERE id = :id'
                     );
-                    $lockStmt->execute([':locked_until' => $lockUntil, ':username' => $username]);
-                    recordLoginHistory($username, 'LOCKED', $loginIp, $userAgent, 'CRITICAL');
-                    logAudit($username, 'LOGIN_LOCKED', 'STAFF', (string)$staff['id'] ?? '', 'FAILURE',
-                        'Account locked after ' . $maxAttempts . ' failed attempts', '', $loginIp);
+                    $updateStmt->execute([':id' => (int)$staff['id']]);
+
+                    // Check if should lock
+                    $checkStmt = $db->prepare(
+                        'SELECT failed_login_attempts FROM staff WHERE id = :id'
+                    );
+                    $checkStmt->execute([':id' => (int)$staff['id']]);
+                    $attemptData = $checkStmt->fetch();
+                    $maxAttempts = (int)getSetting($db, 'security.max_login_attempts', 5);
+
+                    if ((int)($attemptData['failed_login_attempts'] ?? 0) >= $maxAttempts) {
+                        $lockMinutes = (int)getSetting($db, 'security.lockout_duration', 30);
+                        $lockUntil = date('Y-m-d H:i:s', time() + ($lockMinutes * 60));
+                        $lockStmt = $db->prepare(
+                            'UPDATE staff SET account_locked = TRUE, locked_until = :locked_until WHERE id = :id'
+                        );
+                        $lockStmt->execute([':locked_until' => $lockUntil, ':id' => (int)$staff['id']]);
+                        recordLoginHistory($canonicalUsername, 'LOCKED', $loginIp, $userAgent, 'CRITICAL');
+                        logAudit($canonicalUsername, 'LOGIN_LOCKED', 'STAFF', (string)$staff['id'], 'FAILURE',
+                            'Account locked after ' . $maxAttempts . ' failed attempts', (string)($staff['department'] ?? ''), $loginIp);
+                    }
                 }
 
                 errorResponse('Invalid username or password.', 401);
@@ -337,14 +346,14 @@ switch ($method) {
                     $lockedAt = new DateTime($lockedUntil);
                     $now = new DateTime();
                     if ($now < $lockedAt) {
-                        recordLoginHistory($username, 'LOCKED', $loginIp, $userAgent, 'HIGH');
-                        logAudit($username, 'LOGIN_LOCKED', 'STAFF', (string)$staff['id'], 'DENIED',
+                        recordLoginHistory($canonicalUsername, 'LOCKED', $loginIp, $userAgent, 'HIGH');
+                        logAudit($canonicalUsername, 'LOGIN_LOCKED', 'STAFF', (string)$staff['id'], 'DENIED',
                             'Locked account login attempt', $staff['department'], $loginIp);
                         errorResponse('Account is locked. Try again after ' . formatDate($lockedUntil, 'd M Y H:i'), 423);
                     } else {
                         // Unlock
                         $unlockStmt = $db->prepare(
-                            'UPDATE staff SET account_locked = 0, locked_until = NULL, failed_login_attempts = 0
+                            'UPDATE staff SET account_locked = FALSE, locked_until = NULL, failed_login_attempts = 0
                              WHERE id = :id'
                         );
                         $unlockStmt->execute([':id' => $staff['id']]);
@@ -370,7 +379,8 @@ switch ($method) {
 
             // Reset login rate limit on successful authentication
             resetRateLimit('login:' . $loginIp);
-            resetRateLimit('login_user:' . $username);
+            resetRateLimit('login_user:' . strtolower($loginIdentifier));
+            resetRateLimit('login_user:' . strtolower((string)$canonicalUsername));
 
             // ★ SECURITY FIX (CRITICAL): Enforce MFA before session creation.
             // Previously MFA fields existed in the database but were never checked
@@ -386,9 +396,9 @@ switch ($method) {
                 try {
                     $db->prepare(
                         "INSERT INTO mfa_pending_tokens (staff_id, token, ip_address, created_at, expires_at)
-                         VALUES (:sid, :token, :ip, NOW(), DATE_ADD(NOW(), INTERVAL 5 MINUTE))
-                         ON DUPLICATE KEY UPDATE token = VALUES(token), ip_address = VALUES(ip_address),
-                             created_at = NOW(), expires_at = DATE_ADD(NOW(), INTERVAL 5 MINUTE)"
+                         VALUES (:sid, :token, :ip, NOW(), NOW() + INTERVAL '5 minutes')
+                         ON CONFLICT (staff_id) DO UPDATE SET token = EXCLUDED.token, ip_address = EXCLUDED.ip_address,
+                             created_at = NOW(), expires_at = NOW() + INTERVAL '5 minutes'"
                     )->execute([
                         ':sid'   => (int)$staff['id'],
                         ':token' => $mfaPendingToken,
@@ -398,21 +408,19 @@ switch ($method) {
                     // Table might not exist — create it and retry
                     try {
                         $db->exec("CREATE TABLE IF NOT EXISTS mfa_pending_tokens (
-                            id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-                            staff_id INT UNSIGNED NOT NULL,
+                            id SERIAL PRIMARY KEY,
+                            staff_id INTEGER NOT NULL,
                             token VARCHAR(128) NOT NULL,
                             ip_address VARCHAR(50) DEFAULT '',
-                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            expires_at TIMESTAMP NULL,
-                            PRIMARY KEY (id),
-                            UNIQUE KEY uk_staff (staff_id),
-                            INDEX idx_token (token(32))
-                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+                            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                            expires_at TIMESTAMPTZ NULL,
+                            UNIQUE (staff_id)
+                        )");
                         $db->prepare(
                             "INSERT INTO mfa_pending_tokens (staff_id, token, ip_address, created_at, expires_at)
-                             VALUES (:sid, :token, :ip, NOW(), DATE_ADD(NOW(), INTERVAL 5 MINUTE))
-                             ON DUPLICATE KEY UPDATE token = VALUES(token), ip_address = VALUES(ip_address),
-                                 created_at = NOW(), expires_at = DATE_ADD(NOW(), INTERVAL 5 MINUTE)"
+                             VALUES (:sid, :token, :ip, NOW(), NOW() + INTERVAL '5 minutes')
+                             ON CONFLICT (staff_id) DO UPDATE SET token = EXCLUDED.token, ip_address = EXCLUDED.ip_address,
+                                 created_at = NOW(), expires_at = NOW() + INTERVAL '5 minutes'"
                         )->execute([
                             ':sid'   => (int)$staff['id'],
                             ':token' => $mfaPendingToken,
@@ -423,7 +431,7 @@ switch ($method) {
                     }
                 }
 
-                recordLoginHistory($username, 'MFA_REQUIRED', $loginIp, $userAgent, 'LOW');
+                recordLoginHistory($canonicalUsername, 'MFA_REQUIRED', $loginIp, $userAgent, 'LOW');
                 logAudit($staff['full_name'], 'LOGIN_MFA_PENDING', 'STAFF', (string)$staff['id'], 'SUCCESS',
                     'Password verified. MFA code required before session creation.', $staff['department'], $loginIp);
 
@@ -500,7 +508,7 @@ switch ($method) {
             // between the two reads. createSession() is now the single source of truth.
 
             // Record successful login (with risk level and device fingerprint)
-            recordLoginHistory($username, 'SUCCESS', $loginIp, $userAgent, $loginRisk);
+            recordLoginHistory($canonicalUsername, 'SUCCESS', $loginIp, $userAgent, $loginRisk);
 
             // Log audit (with device info)
             $deviceLabel = computeDeviceLabel($userAgent);
@@ -526,7 +534,7 @@ switch ($method) {
 
             // Get staff modules with access levels
             try {
-                $modStmt = $db->prepare('SELECT module_name, COALESCE(access_level, "FULL") AS access_level FROM staff_modules WHERE staff_id = :staff_id');
+                $modStmt = $db->prepare('SELECT module_name, COALESCE(access_level, \'FULL\') AS access_level FROM staff_modules WHERE staff_id = :staff_id');
                 $modStmt->execute([':staff_id' => $staff['id']]);
                 $modRows = $modStmt->fetchAll(PDO::FETCH_ASSOC);
                 $modules = array_map(function($r) {
@@ -577,7 +585,11 @@ switch ($method) {
             ], 'Login successful.');
 
         } catch (PDOException $e) {
-            serverErrorResponse('Authentication error occurred.');
+            $msg = 'Authentication error occurred.';
+            if (defined('APP_DEBUG') && APP_DEBUG) {
+                $msg .= ' ' . $e->getMessage();
+            }
+            serverErrorResponse($msg);
         }
         break;
 
