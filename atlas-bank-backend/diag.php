@@ -1,177 +1,206 @@
 <?php
 /**
- * Atlas Bank — Quick Diagnostic
- * Drop in atlas-bank-backend/ and visit /atlas-bank-backend/diag.php
- * Then DELETE this file after use (security).
+ * Atlas Bank Diagnostic Endpoint
+ * DELETE THIS FILE AFTER DEBUGGING!
+ * Access: /atlas-bank-backend/diag.php
  */
-header('Content-Type: text/plain; charset=utf-8');
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 
-echo "=== ATLAS BANK DIAGNOSTIC ===\n\n";
+header('Content-Type: application/json; charset=utf-8');
 
-// 1. DB Connection
-echo "1. Database Connection: ";
-try {
-    require_once __DIR__ . '/config/database.php';
-    $db = getDB();
-    echo "OK (MySQL connected)\n";
-} catch (Throwable $e) {
-    echo "FAIL: " . $e->getMessage() . "\n";
-    die();
+$results = [
+    'timestamp' => date('c'),
+    'php_version' => PHP_VERSION,
+    'checks' => []
+];
+
+// ── 1. PHP Extensions ──
+$required = ['pdo', 'pdo_pgsql', 'pgsql', 'json', 'mbstring', 'openssl', 'session'];
+$results['checks']['extensions'] = [];
+foreach ($required as $ext) {
+    $results['checks']['extensions'][$ext] = extension_loaded($ext);
 }
 
-// 2. Check tables
-$tables = ['branches', 'staff_modules', 'staff_branches', 'audit_logs', 'sessions', 'staff'];
-foreach ($tables as $t) {
-    echo "2. Table '$t': ";
+// ── 2. Environment Variables ──
+$envVars = ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASS', 'DB_SCHEMA', 'DB_SSLMODE', 'APP_ENV', 'APP_DEBUG'];
+$results['checks']['env_vars'] = [];
+foreach ($envVars as $v) {
+    $val = getenv($v);
+    $results['checks']['env_vars'][$v] = $val !== false ? ('set(' . strlen($val) . ' chars)') : 'NOT SET';
+}
+
+// ── 3. Constants Check ──
+$results['checks']['constants'] = [
+    'DB_HOST' => defined('DB_HOST') ? DB_HOST : 'not defined',
+    'DB_NAME' => defined('DB_NAME') ? DB_NAME : 'not defined',
+    'DB_USER' => defined('DB_USER') ? DB_USER : 'not defined',
+    'DB_SCHEMA' => defined('DB_SCHEMA') ? DB_SCHEMA : 'not defined',
+    'DB_SSLMODE' => defined('DB_SSLMODE') ? DB_SSLMODE : 'not defined',
+];
+
+// ── 4. Database Connection ──
+try {
+    $host = getenv('DB_HOST') ?: 'dpg-d7ungdtb910c73ep2i20-a.oregon-postgres.render.com';
+    $port = getenv('DB_PORT') ?: '5432';
+    $dbname = getenv('DB_NAME') ?: 'atlas_bank_q3gq';
+    $user = getenv('DB_USER') ?: 'atlas_bank_q3gq_user';
+    $pass = getenv('DB_PASS') ?: '3UPC6Q7P97ZDtFYNervRXVFb1o2ijLB9';
+    $schema = getenv('DB_SCHEMA') ?: 'atlas_bank_schema';
+    $sslmode = getenv('DB_SSLMODE') ?: 'require';
+
+    $dsn = sprintf(
+        'pgsql:host=%s;port=%s;dbname=%s;sslmode=%s;options=-c%%20search_path%%3D%s',
+        $host,
+        $port,
+        $dbname,
+        $sslmode,
+        urlencode($schema)
+    );
+
+    $pdo = new PDO($dsn, $user, $pass, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    ]);
+
+    // Set search_path
+    $pdo->exec('SET search_path TO ' . $pdo->quote($schema) . ', public');
+
+    $results['checks']['database'] = [
+        'status' => 'CONNECTED',
+        'dsn_used' => preg_replace('/password=[^;]+/', 'password=***', $dsn),
+    ];
+
+    // Test query
+    $ver = $pdo->query('SELECT version()')->fetchColumn();
+    $results['checks']['database']['version'] = substr($ver, 0, 80);
+
+    // Check schema
+    $schemaCheck = $pdo->query("SELECT schema_name FROM information_schema.schemata WHERE schema_name = '{$schema}'")->fetchColumn();
+    $results['checks']['database']['schema_exists'] = $schemaCheck ? true : false;
+
+    // Check tables count
+    $tableCount = $pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '{$schema}'")->fetchColumn();
+    $results['checks']['database']['table_count'] = (int)$tableCount;
+
+    // Check staff table
     try {
-        $r = $db->query("SELECT COUNT(*) FROM `$t`")->fetchColumn();
-        echo "EXISTS ($r rows)\n";
-    } catch (Throwable $e) {
-        echo "MISSING — " . $e->getMessage() . "\n";
+        $staffCount = $pdo->query("SELECT COUNT(*) FROM {$schema}.staff")->fetchColumn();
+        $results['checks']['database']['staff_count'] = (int)$staffCount;
+    } catch (PDOException $e) {
+        $results['checks']['database']['staff_error'] = $e->getMessage();
+    }
+
+    // Check sessions table
+    try {
+        $sessionsExists = $pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '{$schema}' AND table_name = 'sessions'")->fetchColumn();
+        $results['checks']['database']['sessions_table_exists'] = (int)$sessionsExists > 0;
+    } catch (PDOException $e) {
+        $results['checks']['database']['sessions_error'] = $e->getMessage();
+    }
+
+    $pdo = null;
+
+} catch (PDOException $e) {
+    $results['checks']['database'] = [
+        'status' => 'FAILED',
+        'error' => $e->getMessage(),
+        'code' => $e->getCode(),
+    ];
+}
+
+// ── 5. File Include Test ──
+$files = [
+    'config/constants.php',
+    'config/database.php',
+    'config/cors.php',
+    'middleware/cors.php',
+    'middleware/csrf.php',
+    'middleware/auth.php',
+    'middleware/rbac.php',
+    'middleware/rate_limit.php',
+    'includes/Response.php',
+    'includes/helpers.php',
+    'includes/Auth.php',
+    'includes/Middleware.php',
+    'includes/AuditLogger.php',
+    'api/auth.php',
+    'router.php',
+];
+
+$results['checks']['files'] = [];
+foreach ($files as $f) {
+    $path = __DIR__ . '/' . $f;
+    $results['checks']['files'][$f] = [
+        'exists' => file_exists($path),
+        'readable' => is_readable($path),
+        'size' => file_exists($path) ? filesize($path) : 0,
+    ];
+}
+
+// ── 6. PHP Syntax Check on critical files ──
+$results['checks']['syntax'] = [];
+$criticalFiles = ['config/database.php', 'api/auth.php', 'router.php', 'includes/helpers.php', 'middleware/auth.php'];
+foreach ($criticalFiles as $f) {
+    $path = __DIR__ . '/' . $f;
+    if (file_exists($path)) {
+        exec("php -l " . escapeshellarg($path) . " 2>&1", $output, $code);
+        $results['checks']['syntax'][$f] = [
+            'valid' => $code === 0,
+            'output' => implode("\n", $output)
+        ];
+        $output = [];
     }
 }
 
-// 3. Check branches columns
-echo "\n3. Branches table columns:\n";
+// ── 7. Session Test ──
 try {
-    $cols = $db->query("SHOW COLUMNS FROM branches")->fetchAll(PDO::FETCH_ASSOC);
-    foreach ($cols as $c) {
-        echo "   - {$c['Field']} ({$c['Type']}) Null={$c['Null']} Default={$c['Default']}\n";
-    }
-} catch (Throwable $e) {
-    echo "   ERROR: " . $e->getMessage() . "\n";
+    session_name('ATLAS_BANK_SESSION');
+    session_start();
+    $results['checks']['session'] = [
+        'status' => 'OK',
+        'id' => session_id(),
+        'save_path' => session_save_path(),
+    ];
+    session_write_close();
+} catch (Exception $e) {
+    $results['checks']['session'] = [
+        'status' => 'FAILED',
+        'error' => $e->getMessage()
+    ];
 }
 
-// 4. Try the exact query branches.php uses (GET list)
-echo "\n4. Test GET branches query: ";
+// ── 8. Try loading the full auth pipeline ──
+$results['checks']['auth_pipeline'] = [];
 try {
-    $totalResult = $db->query("SELECT COUNT(*) AS total FROM branches");
-    $totalRow = $totalResult->fetchAll(PDO::FETCH_ASSOC);
-    echo "OK — " . ($totalRow[0]['total'] ?? 0) . " branches found\n";
+    // Simulate what router.php does
+    require_once __DIR__ . '/config/constants.php';
+    $results['checks']['auth_pipeline']['step1_constants'] = 'OK';
+
+    require_once __DIR__ . '/config/database.php';
+    $results['checks']['auth_pipeline']['step2_database'] = 'OK';
+
+    require_once __DIR__ . '/config/cors.php';
+    $results['checks']['auth_pipeline']['step3_cors_config'] = 'OK';
+
+    require_once __DIR__ . '/middleware/cors.php';
+    $results['checks']['auth_pipeline']['step4_cors_middleware'] = 'OK';
+
+    require_once __DIR__ . '/includes/Response.php';
+    $results['checks']['auth_pipeline']['step5_response'] = 'OK';
+
+    require_once __DIR__ . '/includes/helpers.php';
+    $results['checks']['auth_pipeline']['step6_helpers'] = 'OK';
+
+    // Test getDB()
+    $db = getDB();
+    $results['checks']['auth_pipeline']['step7_getdb'] = 'OK - got PDO connection';
+
 } catch (Throwable $e) {
-    echo "FAIL: " . $e->getMessage() . "\n";
+    $results['checks']['auth_pipeline']['error'] = [
+        'message' => $e->getMessage(),
+        'file' => basename($e->getFile()),
+        'line' => $e->getLine(),
+        'trace' => $e->getTraceAsString()
+    ];
 }
 
-// 5. Try SELECT * FROM branches
-echo "5. Test SELECT * FROM branches: ";
-try {
-    $rows = $db->query("SELECT * FROM branches ORDER BY id DESC LIMIT 5")->fetchAll(PDO::FETCH_ASSOC);
-    echo "OK — returned " . count($rows) . " rows\n";
-    foreach ($rows as $r) {
-        echo "   ID={$r['id']} code={$r['code']} name={$r['name']} status={$r['status']}\n";
-    }
-} catch (Throwable $e) {
-    echo "FAIL: " . $e->getMessage() . "\n";
-}
-
-// 6. Check auth — sessions
-echo "\n6. Active sessions: ";
-try {
-    $r = $db->query("SELECT COUNT(*) FROM sessions WHERE expires_at > NOW()")->fetchColumn();
-    echo "$r active session(s)\n";
-} catch (Throwable $e) {
-    echo "ERROR: " . $e->getMessage() . "\n";
-}
-
-// 7. Check staff_modules
-echo "7. Staff module assignments: ";
-try {
-    $r = $db->query("SELECT staff_id, module_name FROM staff_modules LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
-    echo count($r) . " assignment(s) found\n";
-    foreach ($r as $m) {
-        echo "   staff_id={$m['staff_id']} module={$m['module_name']}\n";
-    }
-    if (count($r) === 0) echo "   WARNING: No module assignments! Staff won't pass RBAC check.\n";
-} catch (Throwable $e) {
-    echo "ERROR: " . $e->getMessage() . "\n";
-}
-
-// 8. Check staff_branches
-echo "8. Staff-branch assignments: ";
-try {
-    $r = $db->query("SELECT staff_id, branch_name FROM staff_branches LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
-    echo count($r) . " assignment(s) found\n";
-    foreach ($r as $b) {
-        echo "   staff_id={$b['staff_id']} branch={$b['branch_name']}\n";
-    }
-    if (count($r) === 0) echo "   WARNING: No branch assignments!\n";
-} catch (Throwable $e) {
-    echo "ERROR: " . $e->getMessage() . "\n";
-}
-
-// 9. Test actual branches.php include (simulate the request)
-echo "\n9. Simulating branches.php execution:\n";
-$_SERVER['REQUEST_METHOD'] = 'GET';
-$_SERVER['HTTP_AUTHORIZATION'] = '';
-$_SERVER['REQUEST_URI'] = '/atlas-bank-backend/api/branches';
-$_GET = [];
-$_POST = [];
-$_ROUTE = ['resource' => 'branches', 'id' => null, 'subResource' => null, 'subId' => null, 'method' => 'GET', 'segments' => ['branches'], 'query' => [], 'params' => []];
-
-try {
-    // Test just the table creation part
-    $db->exec("CREATE TABLE IF NOT EXISTS branches (
-        id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
-        code        VARCHAR(20)  NOT NULL,
-        name        VARCHAR(255) NOT NULL,
-        region      VARCHAR(100) DEFAULT NULL,
-        country     VARCHAR(100) NOT NULL DEFAULT 'Cameroon',
-        status      VARCHAR(20)  NOT NULL DEFAULT 'ACTIVE',
-        address     VARCHAR(500) DEFAULT NULL,
-        phone       VARCHAR(50)  DEFAULT NULL,
-        manager     VARCHAR(255) DEFAULT NULL,
-        opened_date DATE         DEFAULT NULL,
-        created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
-        updated_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        PRIMARY KEY (id),
-        UNIQUE KEY uk_branches_code (code)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-    echo "   CREATE TABLE IF NOT EXISTS branches: OK (skipped or created)\n";
-} catch (Throwable $e) {
-    echo "   CREATE TABLE FAIL: " . $e->getMessage() . "\n";
-}
-
-try {
-    $_cols = [];
-    foreach ($db->query("SHOW COLUMNS FROM branches")->fetchAll(PDO::FETCH_ASSOC) as $col) {
-        $_cols[strtolower($col['Field'])] = true;
-    }
-    echo "   Column check OK — " . count($_cols) . " columns found\n";
-    echo "   Has address: " . (isset($_cols['address']) ? 'YES' : 'NO') . "\n";
-    echo "   Has phone: " . (isset($_cols['phone']) ? 'YES' : 'NO') . "\n";
-    echo "   Has manager: " . (isset($_cols['manager']) ? 'YES' : 'NO') . "\n";
-    echo "   Has opened_date: " . (isset($_cols['opened_date']) ? 'YES' : 'NO') . "\n";
-} catch (Throwable $e) {
-    echo "   Column check FAIL: " . $e->getMessage() . "\n";
-}
-
-// 10. Check the actual branches.php file for "critical error" text
-echo "\n10. Searching branches.php for 'critical error' text:\n";
-$branchesFile = __DIR__ . '/api/branches.php';
-if (file_exists($branchesFile)) {
-    $content = file_get_contents($branchesFile);
-    if (strpos($content, 'A critical error occurred') !== false) {
-        $line = 0;
-        foreach (explode("\n", $content) as $ln => $txt) {
-            if (strpos($txt, 'A critical error occurred') !== false) {
-                $line = $ln + 1;
-                break;
-            }
-        }
-        echo "   FOUND at line $line! This is the source of your error.\n";
-    } elseif (strpos($content, 'Branches API fatal error') !== false) {
-        echo "   Has 'Branches API fatal error' handler (correct version)\n";
-    } elseif (strpos($content, 'Branches API error') !== false) {
-        echo "   Has 'Branches API error' catch (correct version)\n";
-    } else {
-        echo "   No 'critical error' or 'API error' text found in branches.php\n";
-    }
-    echo "   File size: " . strlen($content) . " bytes\n";
-} else {
-    echo "   ERROR: branches.php not found at $branchesFile\n";
-}
-
-echo "\n=== DIAGNOSTIC COMPLETE ===\n";
-echo "DELETE this file (diag.php) after use for security.\n";
+echo json_encode($results, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
