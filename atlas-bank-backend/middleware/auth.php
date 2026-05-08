@@ -281,7 +281,7 @@ function requireAuth(): array
         try {
             // Try loading with access_level (new schema) — if column doesn't exist, fall back
             try {
-                $modStmt = $db->prepare("SELECT module_name, COALESCE(access_level, \'FULL\") AS access_level FROM staff_modules WHERE staff_id = :staff_id');
+                $modStmt = $db->prepare("SELECT module_name, COALESCE(access_level, 'FULL') AS access_level FROM staff_modules WHERE staff_id = :staff_id");
                 $modStmt->execute([':staff_id' => $session['staff_id']]);
                 $modRows = $modStmt->fetchAll(PDO::FETCH_ASSOC);
                 $modules = array_column($modRows, 'module_name');
