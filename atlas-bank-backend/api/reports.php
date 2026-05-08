@@ -131,7 +131,7 @@ function reportSafeAddCol(PDO $db, string $table, string $col, string $def): voi
     try {
         $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_name = ? AND column_name = ?");
         $r->execute([$table, $col]);
-        if (!$r) $db->exec("ALTER TABLE "$table" ADD COLUMN "$col" $def");
+        if (!$r) $db->exec("ALTER TABLE $table ADD COLUMN $col $def");
     } catch (PDOException $e) {
         error_log('[Reports Schema] safeAddCol(' . $table . '.' . $col . ') failed: ' . $e->getMessage());
     }
@@ -143,7 +143,7 @@ function reportSafeAddCol(PDO $db, string $table, string $col, string $def): voi
 function reportAddCol(PDO $db, string $col, string $def): void {
     try {
         $r = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'profit_ledger' AND column_name = '$col'")->fetch();
-        if (!$r) $db->exec("ALTER TABLE profit_ledger ADD COLUMN "$col" $def");
+        if (!$r) $db->exec("ALTER TABLE profit_ledger ADD COLUMN $col $def");
     } catch (PDOException $e) {
         error_log('[Reports Schema] reportAddCol(' . $col . ') failed: ' . $e->getMessage());
     }
@@ -1128,7 +1128,7 @@ switch ($method) {
                         }
 
                         // Previous period expenses
-                        $prevExpWhere = ' WHERE date >= :prev_exp_df AND date <= :prev_exp_dt AND status = \'APPROVED\' '
+                        $prevExpWhere = ' WHERE date >= :prev_exp_df AND date <= :prev_exp_dt AND status = 'APPROVED' '
                             . ($bf['exp_branch'] ?? ''); // comparison always has date filters
                         $prevExpParams = array_merge(
                             [':prev_exp_df' => $prevFrom, ':prev_exp_dt' => $prevTo],
@@ -1701,7 +1701,7 @@ switch ($method) {
                     }
 
                     // Current period expenses by category
-                    $curExpWhere = ' WHERE date >= :c_exp_df AND date <= :c_exp_dt AND status = \'APPROVED\' '
+                    $curExpWhere = ' WHERE date >= :c_exp_df AND date <= :c_exp_dt AND status = 'APPROVED' '
                         . ($bf['exp_branch'] ?? '');
                     $curExpParams = array_merge(
                         [':c_exp_df' => $dateFrom, ':c_exp_dt' => $dateTo],
@@ -1716,7 +1716,7 @@ switch ($method) {
                     $curExpByCat = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     // Previous period expenses by category
-                    $prevExpWhere = ' WHERE date >= :p_exp_df AND date <= :p_exp_dt AND status = \'APPROVED\' '
+                    $prevExpWhere = ' WHERE date >= :p_exp_df AND date <= :p_exp_dt AND status = 'APPROVED' '
                         . ($bf['exp_branch'] ?? '');
                     $prevExpParams = array_merge(
                         [':p_exp_df' => $prevFrom, ':p_exp_dt' => $prevTo],
@@ -1924,8 +1924,8 @@ switch ($method) {
 
                 // 4. Settings check
                 try {
-                    $feeSettings = $db->query('SELECT "key", "value" FROM settings WHERE LOWER("key") LIKE \'withdrawal.fee_%\' AND LOWER("key") NOT LIKE \'%mode%\' ORDER BY "key"')->fetchAll(PDO::FETCH_ASSOC);
-                    $modeSettings = $db->query('SELECT "key", "value" FROM settings WHERE LOWER("key") LIKE \'withdrawal.fee_mode_%\' ORDER BY "key"')->fetchAll(PDO::FETCH_ASSOC);
+                    $feeSettings = $db->query('SELECT "key", "value" FROM settings WHERE LOWER("key") LIKE 'withdrawal.fee_%' AND LOWER("key") NOT LIKE '%mode%' ORDER BY "key"')->fetchAll(PDO::FETCH_ASSOC);
+                    $modeSettings = $db->query('SELECT "key", "value" FROM settings WHERE LOWER("key") LIKE 'withdrawal.fee_mode_%' ORDER BY "key"')->fetchAll(PDO::FETCH_ASSOC);
                     $diagnostics['fee_settings'] = $feeSettings;
                     $diagnostics['fee_mode_settings'] = $modeSettings;
                 } catch (PDOException $e) {

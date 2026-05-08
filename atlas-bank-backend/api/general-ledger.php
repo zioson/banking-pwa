@@ -44,13 +44,13 @@ function ensureGeneralLedgerTable(PDO $db): void {
     // Safe migration: add transaction_type column if missing (for existing installations)
     $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'transaction_type'")->fetch();
     if (!$col) {
-        $db->exec("ALTER TABLE general_ledger ADD COLUMN transaction_type VARCHAR(50) DEFAULT '');
+        $db->exec("ALTER TABLE general_ledger ADD COLUMN transaction_type VARCHAR(50) DEFAULT ''");
         $db->exec("ALTER TABLE general_ledger ADD INDEX idx_transaction_type (transaction_type)");
     }
     // Safe migration: add contra_account column if missing
     $col2 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'contra_account'")->fetch();
     if (!$col2) {
-        $db->exec("ALTER TABLE general_ledger ADD COLUMN contra_account VARCHAR(50) DEFAULT '');
+        $db->exec("ALTER TABLE general_ledger ADD COLUMN contra_account VARCHAR(50) DEFAULT ''");
     } else {
         // ★ Widen contra_account if it was created as VARCHAR(10) — some GL codes like '1400' are fine,
         // but descriptions like 'Operating Fund - Bank' need more space
@@ -62,7 +62,7 @@ function ensureGeneralLedgerTable(PDO $db): void {
     // ★ Safe migration: add branch column if missing (for branch-level GL filtering)
     $col3 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'branch'")->fetch();
     if (!$col3) {
-        $db->exec("ALTER TABLE general_ledger ADD COLUMN branch VARCHAR(100) DEFAULT '');
+        $db->exec("ALTER TABLE general_ledger ADD COLUMN branch VARCHAR(100) DEFAULT ''");
         $brIdx = $db->query("SELECT indexname FROM pg_indexes WHERE tablename = 'general_ledger' WHERE indexname = 'idx_branch'")->fetch();
         if (!$brIdx) { $db->exec("ALTER TABLE general_ledger ADD INDEX idx_branch (branch)"); }
     }
@@ -546,13 +546,13 @@ switch ($method) {
 
                 // ★ Safe migration: add contra_account and transaction_type columns if missing
                 $ftCol1 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'operating_account_transactions' AND column_name = 'contra_account'")->fetch();
-                if (!$ftCol1) { $db->exec("ALTER TABLE operating_account_transactions ADD COLUMN contra_account VARCHAR(100) DEFAULT ''); }
+                if (!$ftCol1) { $db->exec("ALTER TABLE operating_account_transactions ADD COLUMN contra_account VARCHAR(100) DEFAULT ''"); }
                 $ftCol2 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'operating_account_transactions' AND column_name = 'transaction_type'")->fetch();
-                if (!$ftCol2) { $db->exec("ALTER TABLE operating_account_transactions ADD COLUMN transaction_type VARCHAR(50) DEFAULT ''); }
+                if (!$ftCol2) { $db->exec("ALTER TABLE operating_account_transactions ADD COLUMN transaction_type VARCHAR(50) DEFAULT ''"); }
 
                 // ★ Safe migration: add branch column to operating_account_transactions
                 $ftCol3 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'operating_account_transactions' AND column_name = 'branch'")->fetch();
-                if (!$ftCol3) { $db->exec("ALTER TABLE operating_account_transactions ADD COLUMN branch VARCHAR(100) DEFAULT ''); }
+                if (!$ftCol3) { $db->exec("ALTER TABLE operating_account_transactions ADD COLUMN branch VARCHAR(100) DEFAULT ''"); }
 
                 // ★ Backfill branch on existing operating_account_transactions from staff records
                 try {

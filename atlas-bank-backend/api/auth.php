@@ -174,7 +174,7 @@ switch ($method) {
                 $staffId = (int)$pending['staff_id'];
 
                 // Get staff record
-                $staffStmt = $db->prepare("SELECT * FROM staff WHERE id = :id AND employment_status = \'ACTIVE\' LIMIT 1");
+                $staffStmt = $db->prepare("SELECT * FROM staff WHERE id = :id AND employment_status = 'ACTIVE' LIMIT 1");
                 $staffStmt->execute([':id' => $staffId]);
                 $staff = $staffStmt->fetch();
 

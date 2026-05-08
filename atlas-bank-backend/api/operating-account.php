@@ -77,7 +77,7 @@ function opAddCol(PDO $db, string $table, string $col, string $def): void {
     $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_name = ? AND column_name = ?");
         $r->execute([$table, $col]);
     if (!$r) {
-        $db->exec("ALTER TABLE "$table" ADD COLUMN "$col" $def");
+        $db->exec("ALTER TABLE $table ADD COLUMN $col $def");
     }
 }
 
@@ -116,13 +116,13 @@ function opEnsureTransactionsTable(PDO $db): void {
     )");
 
     // Safe migration: add contra_account column if missing
-    opAddCol($db, 'operating_account_transactions', 'contra_account', "VARCHAR(100) DEFAULT '');
+    opAddCol($db, 'operating_account_transactions', 'contra_account', "VARCHAR(100) DEFAULT ''");
     // Safe migration: add transaction_type column if missing
-    opAddCol($db, 'operating_account_transactions', 'transaction_type', "VARCHAR(50) DEFAULT '');
+    opAddCol($db, 'operating_account_transactions', 'transaction_type', "VARCHAR(50) DEFAULT ''");
     // ★ FIX (OPFUND-B001): Add branch column for branch-level filtering.
     // Without this, the POST handler's INSERT including "branch" column will fail
     // if no fund transfer has been done yet (general-ledger.php adds it on FUND_TRANSFER).
-    opAddCol($db, 'operating_account_transactions', 'branch', "VARCHAR(100) DEFAULT '');
+    opAddCol($db, 'operating_account_transactions', 'branch', "VARCHAR(100) DEFAULT ''");
     // Safe migration: add branch index for filtered queries
     $brIdx = $db->query("SELECT indexname FROM pg_indexes WHERE tablename = 'operating_account_transactions' WHERE indexname = 'idx_oat_branch'")->fetch();
     if (!$brIdx) {
@@ -182,13 +182,13 @@ function opEnsureGeneralLedgerTable(PDO $db): void {
     // Safe migration: add transaction_type column + index
     $glCol = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'transaction_type'")->fetch();
     if (!$glCol) {
-        $db->exec("ALTER TABLE general_ledger ADD COLUMN transaction_type VARCHAR(50) DEFAULT '');
+        $db->exec("ALTER TABLE general_ledger ADD COLUMN transaction_type VARCHAR(50) DEFAULT ''");
         $db->exec("ALTER TABLE general_ledger ADD INDEX idx_transaction_type (transaction_type)");
     }
     // Safe migration: add contra_account column
-    opAddCol($db, 'general_ledger', 'contra_account', "VARCHAR(50) DEFAULT '');
+    opAddCol($db, 'general_ledger', 'contra_account', "VARCHAR(50) DEFAULT ''");
     // Safe migration: add branch column for branch isolation
-    opAddCol($db, 'general_ledger', 'branch', "VARCHAR(100) DEFAULT '');
+    opAddCol($db, 'general_ledger', 'branch', "VARCHAR(100) DEFAULT ''");
     // Safe migration: add branch index for filtered GL queries
     $brIdx = $db->query("SELECT indexname FROM pg_indexes WHERE tablename = 'general_ledger' WHERE indexname = 'idx_branch'")->fetch();
     if (!$brIdx) {

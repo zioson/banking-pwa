@@ -41,7 +41,7 @@ function ensureOpFundColumns(PDO $db): void {
         $check = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'operating_account_transactions' AND column_name = '$col'")->fetch();
         if (!$check) {
             $type = ($col === 'description') ? 'TEXT' : "VARCHAR(100) DEFAULT NULL";
-            $db->exec("ALTER TABLE operating_account_transactions ADD COLUMN "$col" $type");
+            $db->exec("ALTER TABLE operating_account_transactions ADD COLUMN $col $type");
         }
     }
     // Safe migration: add branch index for filtered queries

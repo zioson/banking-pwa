@@ -40,7 +40,7 @@ function laAddCol(PDO $db, string $table, string $col, string $def): void {
     try {
         $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_name = ? AND column_name = ?");
         $r->execute([$table, $col]);
-        if (!$r) $db->exec("ALTER TABLE "$table" ADD COLUMN "$col" $def");
+        if (!$r) $db->exec("ALTER TABLE $table ADD COLUMN $col $def");
     } catch (PDOException $e) {
         error_log("[LoanApps Schema] laAddCol($table, $col) failed: " . $e->getMessage());
     }
@@ -122,7 +122,7 @@ function laEnsureSchema(PDO $db): void {
     // Without it, already-disbursed applications reappear as APPROVED in the UI.
     try {
         $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'loan_applications' AND column_name = 'status'")->fetch();
-        if ($col && str_contains($col['Type'], 'VARCHAR(20)) {
+        if ($col && str_contains($col['Type'], 'VARCHAR(20)')) {
             if (!str_contains($col['Type'], 'DISBURSED')) {
                 $db->exec("ALTER TABLE loan_applications ALTER COLUMN status TYPE VARCHAR(20)");
             }
@@ -168,7 +168,7 @@ function laEnsureApprovalsSchema(PDO $db): void {
     try {
         $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'approvals' AND column_name = 'details'")->fetch();
         if (!$col) {
-            $db->exec("ALTER TABLE approvals ADD COLUMN details TEXT DEFAULT NULL);
+            $db->exec("ALTER TABLE approvals ADD COLUMN details TEXT DEFAULT NULL");
         }
     } catch (PDOException $e) {
         error_log("[LoanApps Schema] approvals.details migration failed: " . $e->getMessage());
@@ -741,15 +741,15 @@ switch ($method) {
                          'debit_account_number', 'debit_account_id', 'loan_id', 'disbursement_account_id',
                          'guarantor_customer_id', 'guarantor_account_id', 'guarantor_account_number'] as $f) {
                     if (isset($input[$f])) {
-                        $fields[] = ""$f" = :$f";
+                        $fields[] = "\"$f\" = :$f";
                         $params[":$f"] = $input[$f];
                     }
                 }
 
                 // If status changed to a terminal/dispositive state, record who decided and when
                 if (isset($input['status']) && in_array(strtoupper($input['status']), ['APPROVED','REJECTED','WITHDRAWN','DISBURSED'])) {
-                    $fields[] = ""decided_by" = :decided_by";
-                    $fields[] = ""decided_at" = NOW()";
+                    $fields[] = "\"decided_by\" = :decided_by";
+                    $fields[] = "\"decided_at\" = NOW()";
                     $params[':decided_by'] = $staff['id'] ?? null;
                 }
 
@@ -772,7 +772,7 @@ switch ($method) {
                     // Check for orphaned ACTIVE loan by customer_id + amount
                     $orphanCheck = $db->prepare(
                         'SELECT id, loan_number, status FROM loans ' .
-                        'WHERE customer_id = :cid AND principal = :amt AND status IN (\'ACTIVE\', \'DELINQUENT\') ' .
+                        'WHERE customer_id = :cid AND principal = :amt AND status IN ('ACTIVE', 'DELINQUENT') ' .
                         'ORDER BY id DESC LIMIT 1'
                     );
                     $orphanCheck->execute([':cid' => (int)$app['customer_id'], ':amt' => (float)$app['amount']]);

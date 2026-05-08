@@ -101,27 +101,27 @@ $db->exec("CREATE TABLE IF NOT EXISTS staff (
 try {
     $cols = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'staff' AND column_name = 'force_password_change'")->fetchAll();
     if (empty($cols)) {
-        $db->exec("ALTER TABLE staff ADD COLUMN force_password_change BOOLEAN NOT NULL DEFAULT 0);
+        $db->exec("ALTER TABLE staff ADD COLUMN force_password_change BOOLEAN NOT NULL DEFAULT 0");
     }
     $cols2 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'staff' AND column_name = 'password_changed_at'")->fetchAll();
     if (empty($cols2)) {
-        $db->exec("ALTER TABLE staff ADD COLUMN password_changed_at TIMESTAMP NULL DEFAULT NULL);
+        $db->exec("ALTER TABLE staff ADD COLUMN password_changed_at TIMESTAMP NULL DEFAULT NULL");
     }
     $cols3 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'staff' AND column_name = 'timezone'")->fetchAll();
     if (empty($cols3)) {
-        $db->exec("ALTER TABLE staff ADD COLUMN timezone VARCHAR(50) DEFAULT 'Africa/Douala');
+        $db->exec("ALTER TABLE staff ADD COLUMN timezone VARCHAR(50) DEFAULT 'Africa/Douala'");
     }
     $cols4 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'staff' AND column_name = 'locale'")->fetchAll();
     if (empty($cols4)) {
-        $db->exec("ALTER TABLE staff ADD COLUMN locale VARCHAR(10) DEFAULT 'en');
+        $db->exec("ALTER TABLE staff ADD COLUMN locale VARCHAR(10) DEFAULT 'en'");
     }
     $cols5 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'staff' AND column_name = 'notifications_enabled'")->fetchAll();
     if (empty($cols5)) {
-        $db->exec("ALTER TABLE staff ADD COLUMN notifications_enabled BOOLEAN NOT NULL DEFAULT 1);
+        $db->exec("ALTER TABLE staff ADD COLUMN notifications_enabled BOOLEAN NOT NULL DEFAULT 1");
     }
     $cols6 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'staff' AND column_name = 'profile_picture'")->fetchAll();
     if (empty($cols6)) {
-        $db->exec("ALTER TABLE staff ADD COLUMN profile_picture LONGTEXT DEFAULT NULL");
+        $db->exec("ALTER TABLE staff ADD COLUMN profile_picture TEXT DEFAULT NULL");
     }
     // ★ FIX (SP-045): Add deactivation_reason and suspension_reason columns.
     // Previously these were sent by the frontend but silently discarded by the backend,
@@ -129,11 +129,11 @@ try {
     // the status change, making them visible on the staff record itself.
     $cols7 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'staff' AND column_name = 'deactivation_reason'")->fetchAll();
     if (empty($cols7)) {
-        $db->exec("ALTER TABLE staff ADD COLUMN deactivation_reason VARCHAR(500) DEFAULT NULL);
+        $db->exec("ALTER TABLE staff ADD COLUMN deactivation_reason VARCHAR(500) DEFAULT NULL");
     }
     $cols8 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'staff' AND column_name = 'suspension_reason'")->fetchAll();
     if (empty($cols8)) {
-        $db->exec("ALTER TABLE staff ADD COLUMN suspension_reason VARCHAR(500) DEFAULT NULL);
+        $db->exec("ALTER TABLE staff ADD COLUMN suspension_reason VARCHAR(500) DEFAULT NULL");
     }
 } catch (PDOException $e) { /* Columns may already exist — safe to ignore */ }
 
@@ -872,7 +872,7 @@ switch ($method) {
 
             foreach ($allowedFields as $key) {
                 if (isset($input[$key])) {
-                    $fields[] = ""$key" = :$key";
+                    $fields[] = "$key = :$key";
                     $params[":$key"] = sanitize($input[$key]);
                 }
             }
@@ -881,7 +881,7 @@ switch ($method) {
             // Use array_key_exists instead of isset() because null is a valid value (remove picture)
             if (array_key_exists('profile_picture', $input)) {
                 if ($input['profile_picture'] === null || $input['profile_picture'] === '') {
-                    $fields[] = ""profile_picture" = NULL";
+                    $fields[] = "\"profile_picture\" = NULL";
                 } else {
                     // ★ SECURITY: Validate profile picture size (max ~500KB base64)
                     if (strlen($input['profile_picture']) > 700000) {
@@ -893,7 +893,7 @@ switch ($method) {
                     if (!preg_match('/^data:image\/(png|jpeg|jpg|gif|webp);base64,/i', $pp)) {
                         validationError(['profile_picture' => 'Profile picture must be a valid image (PNG, JPEG, GIF, or WebP).']);
                     }
-                    $fields[] = ""profile_picture" = :profile_picture";
+                    $fields[] = "\"profile_picture\" = :profile_picture";
                     $params[":profile_picture"] = $pp;
                 }
             }
@@ -1039,7 +1039,7 @@ switch ($method) {
         }
         foreach ($fieldMap as $key => $col) {
             if (isset($input[$key])) {
-                $fields[] = ""$col" = :$key";
+                $fields[] = "$col = :$key";
                 $params[":$key"] = sanitize($input[$key]);
             }
         }

@@ -20,13 +20,14 @@ $sub    = $_ROUTE['subResource'] ?? null;  // e.g. policies/{id}/revisions, poli
 $db = getDB();
 
 // ── Main policies table ──
+try {
 $db->exec('CREATE TABLE IF NOT EXISTS "policies" (
-    "id" INT PRIMARY KEY,
+    "id" SERIAL PRIMARY KEY,
     "code" VARCHAR(50) NOT NULL,
     "version" VARCHAR(20) DEFAULT \'1.0\',
     "name" VARCHAR(255) NOT NULL,
     "description" TEXT DEFAULT NULL,
-    "content" LONGTEXT DEFAULT NULL,
+    "content" TEXT DEFAULT NULL,
     "category" VARCHAR(100) DEFAULT \'GENERAL\',
     "status" VARCHAR(20) DEFAULT \'ACTIVE\',
     "severity" VARCHAR(20) DEFAULT \'MEDIUM\',
@@ -39,21 +40,20 @@ $db->exec('CREATE TABLE IF NOT EXISTS "policies" (
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "created_by" VARCHAR(191) DEFAULT NULL,
-    UNIQUE KEY "uk_code_version" ("code", "version"),
-    KEY "idx_category" ("category"),
-    KEY "idx_status" ("status"),
-    KEY "idx_effective_to" ("effective_to")
+    UNIQUE ("code", "version")
 )');
+} catch (PDOException $e) { /* table already exists */ }
 
 // ── Revisions history table ──
+try {
 $db->exec('CREATE TABLE IF NOT EXISTS "policy_revisions" (
-    "id" INT PRIMARY KEY,
-    "policy_id" INT NOT NULL,
-    "revision" INT NOT NULL DEFAULT 1,
+    "id" SERIAL PRIMARY KEY,
+    "policy_id" INTEGER NOT NULL,
+    "revision" INTEGER NOT NULL DEFAULT 1,
     "version" VARCHAR(20) DEFAULT \'1.0\',
     "name" VARCHAR(255) NOT NULL,
     "description" TEXT DEFAULT NULL,
-    "content" LONGTEXT DEFAULT NULL,
+    "content" TEXT DEFAULT NULL,
     "category" VARCHAR(100) DEFAULT NULL,
     "severity" VARCHAR(20) DEFAULT NULL,
     "owner" VARCHAR(191) DEFAULT NULL,
@@ -61,10 +61,9 @@ $db->exec('CREATE TABLE IF NOT EXISTS "policy_revisions" (
     "effective_to" DATE DEFAULT NULL,
     "change_summary" TEXT DEFAULT NULL,
     "changed_by" VARCHAR(191) DEFAULT NULL,
-    "changed_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    KEY "idx_policy_id" ("policy_id"),
-    KEY "idx_revision" ("policy_id", "revision')
-)");
+    "changed_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)');
+} catch (PDOException $e) { /* table already exists */ }
 
 // ── Self-heal: migrate old unique key + add missing columns ──
 // NOTE: No — they fail if the reference column doesn't exist yet,
@@ -73,7 +72,7 @@ foreach ([
     "ALTER TABLE \"policies\" ADD COLUMN \"version\" VARCHAR(20) DEFAULT '1.0'",
     "ALTER TABLE \"policies\" ADD COLUMN \"category\" VARCHAR(100) DEFAULT 'GENERAL'",
     "ALTER TABLE \"policies\" ADD COLUMN \"status\" VARCHAR(20) DEFAULT 'ACTIVE'",
-    "ALTER TABLE \"policies\" ADD COLUMN \"content\" LONGTEXT DEFAULT NULL",
+    "ALTER TABLE \"policies\" ADD COLUMN \"content\" TEXT DEFAULT NULL",
     "ALTER TABLE \"policies\" ADD COLUMN \"severity\" VARCHAR(20) DEFAULT 'MEDIUM'",
     "ALTER TABLE \"policies\" ADD COLUMN \"owner\" VARCHAR(191) DEFAULT NULL",
     "ALTER TABLE \"policies\" ADD COLUMN \"review_cycle_days\" INT DEFAULT 365",
@@ -197,7 +196,7 @@ if ($sub === 'review' && $method === 'POST') {
     requireRole(['ADMIN', 'COMPLIANCE']);
     try {
         $today = date('Y-m-d');
-        $stmt = $db->prepare("UPDATE policies SET last_reviewed_at = :today1, next_review_date = (:today2::DATE + (review_cycle_days || \' days\")::INTERVAL), updated_at = NOW() WHERE id = :id');
+        $stmt = $db->prepare("UPDATE policies SET last_reviewed_at = :today1, next_review_date = (:today2::DATE + (review_cycle_days || ' days\")::INTERVAL), updated_at = NOW() WHERE id = :id');
         $stmt->execute([':today1' => $today, ':today2' => $today, ':id' => $id]);
         logAudit($staff['full_name'], 'POLICY_REVIEW', 'POLICY', $id, 'SUCCESS',
             'Marked policy ID ' . $id . ' as reviewed', $staff['department'], getClientIp());
@@ -320,7 +319,7 @@ switch ($method) {
                     if ((string)$newVal !== (string)$oldVal) {
                         $diffParts[] = $f . ': "' . mb_substr($oldVal, 0, 60) . '" -> "' . mb_substr($newVal, 0, 60) . '"';
                     }
-                    $fields[] = ""$dbCol" = $paramName";
+                    $fields[] = "\"$dbCol\" = $paramName";
                     $params[$paramName] = $newVal;
                 }
             }
@@ -328,7 +327,7 @@ switch ($method) {
             // Handle review_cycle_days and next_review_date
             if (isset($input['review_cycle_days'])) {
                 $rcyc = intval($input['review_cycle_days']);
-                $fields[] = ""review_cycle_days" = :rcyc";
+                $fields[] = "\"review_cycle_days\" = :rcyc";
                 $params[':rcyc'] = $rcyc;
             }
 

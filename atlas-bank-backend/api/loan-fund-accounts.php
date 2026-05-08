@@ -40,7 +40,7 @@ if ($method === 'POST') {
 function lfAddCol(PDO $db, string $table, string $col, string $def): void {
     $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_name = ? AND column_name = ?");
     $r->execute([$table, $col]);
-    if (!$r) $db->exec("ALTER TABLE "$table" ADD COLUMN "$col" $def");
+    if (!$r) $db->exec("ALTER TABLE $table ADD COLUMN $col $def");
 }
 
 function lfNormalizeBranches(array $branches): array {
@@ -84,9 +84,9 @@ function lfEnsureSchema(PDO $db): void {
         INDEX idx_transaction_type (transaction_type)
     )");
     // Safe migration: ensure branch column exists (required by lfPostGL inserts)
-    lfAddCol($db, 'general_ledger', 'transaction_type', "VARCHAR(50) DEFAULT '');
-    lfAddCol($db, 'general_ledger', 'contra_account', "VARCHAR(50) DEFAULT '');
-    lfAddCol($db, 'general_ledger', 'branch', "VARCHAR(100) DEFAULT '');
+    lfAddCol($db, 'general_ledger', 'transaction_type', "VARCHAR(50) DEFAULT ''");
+    lfAddCol($db, 'general_ledger', 'contra_account', "VARCHAR(50) DEFAULT ''");
+    lfAddCol($db, 'general_ledger', 'branch', "VARCHAR(100) DEFAULT ''");
     $brIdx = $db->query("SELECT indexname FROM pg_indexes WHERE tablename = 'general_ledger' WHERE indexname = 'idx_branch'")->fetch();
     if (!$brIdx) {
         $db->exec("ALTER TABLE general_ledger ADD INDEX idx_branch (branch)");
@@ -148,7 +148,7 @@ function lfEnsureSchema(PDO $db): void {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (loan_fund_account_id) REFERENCES loan_fund_accounts(id)
     )");
-    lfAddCol($db, 'loan_fund_transactions', 'branch', "VARCHAR(20) DEFAULT NULL);
+    lfAddCol($db, 'loan_fund_transactions', 'branch', "VARCHAR(20) DEFAULT NULL");
 
     // Backfill branch for existing loan_fund_transactions where missing
     try {

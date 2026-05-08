@@ -44,7 +44,7 @@ function apprResolveEntityBranch(PDO $db, string $entityType, int $entityId): st
     if (!isset($map[$entityType])) return '';
     [$table, $column] = $map[$entityType];
     try {
-        $stmt = $db->prepare("SELECT \"' . $column . '\" FROM \"' . $table . '\" WHERE id = :id LIMIT 1");
+        $stmt = $db->prepare("SELECT \"$column\" FROM \"$table\" WHERE id = :id LIMIT 1");
         $stmt->execute([':id' => $entityId]);
         return sanitize((string)($stmt->fetchColumn() ?: ''));
     } catch (PDOException $e) {
@@ -79,22 +79,22 @@ switch ($method) {
             $db = getDB();
 
             // ── Auto-migrate: ensure approvals table exists ──
-            $db->exec('CREATE TABLE IF NOT EXISTS "approvals" (
-                "id" SERIAL PRIMARY KEY,
-                "entity_type" VARCHAR(50) NOT NULL,
-                "entity_id" INTEGER DEFAULT NULL,
-                "scope_code" VARCHAR(50) NOT NULL,
-                "status" VARCHAR(50) NOT NULL DEFAULT \'PENDING\' CHECK ("status" IN (\'PENDING\',\'APPROVED\',\'REJECTED\',\'CANCELLED\')),
-                "submitted_by" INTEGER DEFAULT NULL,
-                "branch" VARCHAR(20) DEFAULT NULL,
-                "value" TEXT DEFAULT NULL,
-                "details" TEXT DEFAULT NULL,
-                "submitted_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                "decided_by" INTEGER DEFAULT NULL,
-                "decided_at" TIMESTAMP DEFAULT NULL,
-                "reason" TEXT DEFAULT NULL,
-                "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )');
+            $db->exec("CREATE TABLE IF NOT EXISTS \"approvals\" (
+                \"id\" SERIAL PRIMARY KEY,
+                \"entity_type\" VARCHAR(50) NOT NULL,
+                \"entity_id\" INTEGER DEFAULT NULL,
+                \"scope_code\" VARCHAR(50) NOT NULL,
+                \"status\" VARCHAR(50) NOT NULL DEFAULT 'PENDING' CHECK (\"status\" IN ('PENDING','APPROVED','REJECTED','CANCELLED')),
+                \"submitted_by\" INTEGER DEFAULT NULL,
+                \"branch\" VARCHAR(20) DEFAULT NULL,
+                \"value\" TEXT DEFAULT NULL,
+                \"details\" TEXT DEFAULT NULL,
+                \"submitted_at\" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                \"decided_by\" INTEGER DEFAULT NULL,
+                \"decided_at\" TIMESTAMP DEFAULT NULL,
+                \"reason\" TEXT DEFAULT NULL,
+                \"created_at\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )");
             try { $db->exec('CREATE INDEX IF NOT EXISTS idx_approvals_entity ON "approvals" (entity_type, entity_id)'); } catch (PDOException $e) {}
             try { $db->exec('CREATE INDEX IF NOT EXISTS idx_approvals_status ON "approvals" (status)'); } catch (PDOException $e) {}
 
@@ -112,7 +112,7 @@ switch ($method) {
                 if ($statusCol) {
                     // Try to add/drop the check constraint to include CANCELLED
                     try { $db->exec('ALTER TABLE "approvals" DROP CONSTRAINT IF EXISTS approvals_status_check'); } catch (PDOException $e) {}
-                    try { $db->exec("ALTER TABLE \"approvals\" ADD CONSTRAINT approvals_status_check CHECK (\"status\" IN (\'PENDING\',\'APPROVED\',\'REJECTED\',\'CANCELLED\"))'); } catch (PDOException $e) {}
+                    try { $db->exec("ALTER TABLE \"approvals\" ADD CONSTRAINT approvals_status_check CHECK (\"status\" IN ('PENDING','APPROVED','REJECTED','CANCELLED'))"); } catch (PDOException $e) {}
                 }
             } catch (PDOException $e) {
                 error_log('[Approvals Schema] status check fix failed: ' . $e->getMessage());
@@ -177,22 +177,22 @@ switch ($method) {
             $detailsPayload = apprNormalizeDetails($input['details'] ?? null, $scopeCode);
 
             // ── Auto-migrate table (same as GET) ──
-            $db->exec('CREATE TABLE IF NOT EXISTS "approvals" (
-                "id" SERIAL PRIMARY KEY,
-                "entity_type" VARCHAR(50) NOT NULL,
-                "entity_id" INTEGER DEFAULT NULL,
-                "scope_code" VARCHAR(50) NOT NULL,
-                "status" VARCHAR(50) NOT NULL DEFAULT \'PENDING\' CHECK ("status" IN (\'PENDING\',\'APPROVED\',\'REJECTED\',\'CANCELLED\')),
-                "submitted_by" INTEGER DEFAULT NULL,
-                "branch" VARCHAR(20) DEFAULT NULL,
-                "value" TEXT DEFAULT NULL,
-                "details" TEXT DEFAULT NULL,
-                "submitted_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                "decided_by" INTEGER DEFAULT NULL,
-                "decided_at" TIMESTAMP DEFAULT NULL,
-                "reason" TEXT DEFAULT NULL,
-                "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )');
+            $db->exec("CREATE TABLE IF NOT EXISTS \"approvals\" (
+                \"id\" SERIAL PRIMARY KEY,
+                \"entity_type\" VARCHAR(50) NOT NULL,
+                \"entity_id\" INTEGER DEFAULT NULL,
+                \"scope_code\" VARCHAR(50) NOT NULL,
+                \"status\" VARCHAR(50) NOT NULL DEFAULT 'PENDING' CHECK (\"status\" IN ('PENDING','APPROVED','REJECTED','CANCELLED')),
+                \"submitted_by\" INTEGER DEFAULT NULL,
+                \"branch\" VARCHAR(20) DEFAULT NULL,
+                \"value\" TEXT DEFAULT NULL,
+                \"details\" TEXT DEFAULT NULL,
+                \"submitted_at\" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                \"decided_by\" INTEGER DEFAULT NULL,
+                \"decided_at\" TIMESTAMP DEFAULT NULL,
+                \"reason\" TEXT DEFAULT NULL,
+                \"created_at\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )");
             try { $db->exec('CREATE INDEX IF NOT EXISTS idx_approvals_entity ON "approvals" (entity_type, entity_id)'); } catch (PDOException $e) {}
             try { $db->exec('CREATE INDEX IF NOT EXISTS idx_approvals_status ON "approvals" (status)'); } catch (PDOException $e) {}
             $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'approvals' AND column_name = 'details'")->fetch();
@@ -249,22 +249,22 @@ switch ($method) {
             $db = getDB();
 
             // ── Auto-migrate ──
-            $db->exec('CREATE TABLE IF NOT EXISTS "approvals" (
-                "id" SERIAL PRIMARY KEY,
-                "entity_type" VARCHAR(50) NOT NULL,
-                "entity_id" INTEGER DEFAULT NULL,
-                "scope_code" VARCHAR(50) NOT NULL,
-                "status" VARCHAR(50) NOT NULL DEFAULT \'PENDING\' CHECK ("status" IN (\'PENDING\',\'APPROVED\',\'REJECTED\',\'CANCELLED\')),
-                "submitted_by" INTEGER DEFAULT NULL,
-                "branch" VARCHAR(20) DEFAULT NULL,
-                "value" TEXT DEFAULT NULL,
-                "details" TEXT DEFAULT NULL,
-                "submitted_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                "decided_by" INTEGER DEFAULT NULL,
-                "decided_at" TIMESTAMP DEFAULT NULL,
-                "reason" TEXT DEFAULT NULL,
-                "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )');
+            $db->exec("CREATE TABLE IF NOT EXISTS \"approvals\" (
+                \"id\" SERIAL PRIMARY KEY,
+                \"entity_type\" VARCHAR(50) NOT NULL,
+                \"entity_id\" INTEGER DEFAULT NULL,
+                \"scope_code\" VARCHAR(50) NOT NULL,
+                \"status\" VARCHAR(50) NOT NULL DEFAULT 'PENDING' CHECK (\"status\" IN ('PENDING','APPROVED','REJECTED','CANCELLED')),
+                \"submitted_by\" INTEGER DEFAULT NULL,
+                \"branch\" VARCHAR(20) DEFAULT NULL,
+                \"value\" TEXT DEFAULT NULL,
+                \"details\" TEXT DEFAULT NULL,
+                \"submitted_at\" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                \"decided_by\" INTEGER DEFAULT NULL,
+                \"decided_at\" TIMESTAMP DEFAULT NULL,
+                \"reason\" TEXT DEFAULT NULL,
+                \"created_at\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )");
             try { $db->exec('CREATE INDEX IF NOT EXISTS idx_approvals_entity ON "approvals" (entity_type, entity_id)'); } catch (PDOException $e) {}
             try { $db->exec('CREATE INDEX IF NOT EXISTS idx_approvals_status ON "approvals" (status)'); } catch (PDOException $e) {}
 

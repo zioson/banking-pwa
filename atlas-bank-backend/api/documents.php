@@ -19,7 +19,7 @@ function addColumnIfMissing(PDO $db, string $table, string $column, string $defi
         $r->execute([$table, $column]);
         $col = $r->fetch();
         if (!$col) {
-            $db->exec("ALTER TABLE "$table" ADD COLUMN "$column" $definition");
+            $db->exec("ALTER TABLE $table ADD COLUMN $column $definition");
         }
     } catch (PDOException $e) {
         error_log("[Schema] addColumnIfMissing($table, $column) failed: " . $e->getMessage());

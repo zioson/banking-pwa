@@ -152,7 +152,7 @@ function invAddCol(PDO $db, string $table, string $col, string $def): void
     $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_name = ? AND column_name = ?");
     $r->execute([$table, $col]);
     if (!$r) {
-        $db->exec("ALTER TABLE "$table" ADD COLUMN "$col" $def");
+        $db->exec("ALTER TABLE $table ADD COLUMN $col $def");
     }
 }
 
@@ -273,9 +273,9 @@ function invEnsureSchema(PDO $db): void
         CONSTRAINT fk_ipl_shareholder FOREIGN KEY (shareholder_id) REFERENCES investment_shareholders(id) ON DELETE CASCADE
     )");
 
-    invAddCol($db, 'investment_cycles', 'branch', "VARCHAR(100) DEFAULT '');
-    invAddCol($db, 'investment_transactions', 'branch', "VARCHAR(100) DEFAULT '');
-    invAddCol($db, 'investment_shareholders', 'branch', "VARCHAR(100) DEFAULT '');
+    invAddCol($db, 'investment_cycles', 'branch', "VARCHAR(100) DEFAULT ''");
+    invAddCol($db, 'investment_transactions', 'branch', "VARCHAR(100) DEFAULT ''");
+    invAddCol($db, 'investment_shareholders', 'branch', "VARCHAR(100) DEFAULT ''");
     try {
         $db->exec("UPDATE investment_shareholders SET branch = st.department
                    FROM staff st
