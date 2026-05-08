@@ -368,7 +368,7 @@ function createClientSession(PDO $db, int $customerId, string $username = ''): s
     if ($username !== '') {
         $db->prepare('UPDATE customer_portal_users SET last_login = NOW(), last_login_ip = :ip WHERE customer_id = :cid')
            ->execute([':ip' => getClientIp(), ':cid' => $customerId]);
-        $db->prepare('UPDATE customer_portal_users SET failed_login_attempts = FALSE, locked_until = NULL WHERE customer_id = :cid')
+        $db->prepare('UPDATE customer_portal_users SET failed_login_attempts = 0, locked_until = NULL WHERE customer_id = :cid')
            ->execute([':cid' => $customerId]);
     }
 

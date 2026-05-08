@@ -85,7 +85,7 @@ function checkRateLimit(string $key, int $maxRequests = 30, int $windowSeconds =
             if (!empty($row['first_attempt_at']) && strtotime($row['first_attempt_at']) < $now - $windowSeconds) {
                 // Window expired: reset counter and start fresh
                 $db->prepare(
-                    'UPDATE rate_limits SET attempt_count = TRUE, first_attempt_at = NOW(), blocked_until = NULL
+                    'UPDATE rate_limits SET attempt_count = 1, first_attempt_at = NOW(), blocked_until = NULL
                      WHERE rate_key = :key'
                 )->execute([':key' => $key]);
                 return true;
