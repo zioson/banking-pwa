@@ -48,12 +48,11 @@ try {
     $sslmode = getenv('DB_SSLMODE') ?: 'require';
 
     $dsn = sprintf(
-        'pgsql:host=%s;port=%s;dbname=%s;sslmode=%s;options=-c%%20search_path%%3D%s',
+        'pgsql:host=%s;port=%s;dbname=%s;sslmode=%s',
         $host,
         $port,
         $dbname,
-        $sslmode,
-        urlencode($schema)
+        $sslmode
     );
 
     $pdo = new PDO($dsn, $user, $pass, [
@@ -61,7 +60,7 @@ try {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ]);
 
-    // Set search_path
+    // Set search_path after connection (not via DSN options — that causes encoding issues)
     $pdo->exec('SET search_path TO ' . $pdo->quote($schema) . ', public');
 
     $results['checks']['database'] = [
