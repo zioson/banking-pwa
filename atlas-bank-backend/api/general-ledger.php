@@ -34,12 +34,12 @@ function ensureGeneralLedgerTable(PDO $db): void {
         posted_by INT DEFAULT NULL,
         transaction_type VARCHAR(50) DEFAULT '',
         contra_account VARCHAR(50) DEFAULT '',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_account_code (account_code),
-        INDEX idx_date (date),
-        INDEX idx_reference (reference),
-        INDEX idx_transaction_type (transaction_type)
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_account_code ON general_ledger (account_code)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_date ON general_ledger (date)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_reference ON general_ledger (reference)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_transaction_type ON general_ledger (transaction_type)");
 
     // Safe migration: add transaction_type column if missing (for existing installations)
     $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'transaction_type'")->fetch();
@@ -98,11 +98,11 @@ function ensureChartOfAccounts(PDO $db): void {
         type VARCHAR(20) NOT NULL,
         category VARCHAR(100),
         description TEXT,
-        is_active BOOLEAN DEFAULT 1,
-        INDEX idx_code (code),
-        INDEX idx_type (type),
-        INDEX idx_active (is_active)
+        is_active BOOLEAN DEFAULT 1
     )");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_code ON chart_of_accounts (code)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_type ON chart_of_accounts (type)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_active ON chart_of_accounts (is_active)");
 
     // Seed if empty
     $count = (int)$db->query("SELECT COUNT(*) FROM chart_of_accounts")->fetchColumn();

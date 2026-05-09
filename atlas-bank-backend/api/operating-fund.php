@@ -68,11 +68,11 @@ function ensureGeneralLedgerTable(PDO $db): void {
             credit DECIMAL(20,2) DEFAULT 0,
             description TEXT,
             posted_by INT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_date (date),
-            INDEX idx_ref (reference),
-            INDEX idx_account (account_code)
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )");
+        $db->exec("CREATE INDEX IF NOT EXISTS idx_date ON general_ledger (date)");
+        $db->exec("CREATE INDEX IF NOT EXISTS idx_ref ON general_ledger (reference)");
+        $db->exec("CREATE INDEX IF NOT EXISTS idx_account ON general_ledger (account_code)");
     }
 }
 
@@ -122,9 +122,9 @@ function ensureChartOfAccounts(PDO $db): void {
             description TEXT,
             is_active BOOLEAN DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE (account_code),
-            INDEX idx_type (account_type)
+            UNIQUE (account_code)
         )");
+        $db->exec("CREATE INDEX IF NOT EXISTS idx_type ON chart_of_accounts (account_type)");
     }
 
     // Seed the three required GL accounts (idempotent INSERT ON CONFLICT DO NOTHING)

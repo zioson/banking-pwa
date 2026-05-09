@@ -210,12 +210,12 @@ switch ($method) {
                 operator VARCHAR(200) DEFAULT '',
                 contra_account VARCHAR(50) DEFAULT '',
                 transaction_type VARCHAR(50) DEFAULT '',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_ref (ref),
-                INDEX idx_operating_account_id (operating_account_id),
-                INDEX idx_date (date),
-                INDEX idx_transaction_type (transaction_type)
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )");
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_ref ON operating_account_transactions (ref)");
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_operating_account_id ON operating_account_transactions (operating_account_id)");
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_date ON operating_account_transactions (date)");
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_transaction_type ON operating_account_transactions (transaction_type)");
 
             // Ensure general_ledger table exists
             $db->exec("CREATE TABLE IF NOT EXISTS general_ledger (
@@ -231,13 +231,13 @@ switch ($method) {
                 posted_by INT DEFAULT NULL,
                 transaction_type VARCHAR(50) DEFAULT '',
                 contra_account VARCHAR(50) DEFAULT '',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_account_code (account_code),
-                INDEX idx_date (date),
-                INDEX idx_reference (reference),
-                INDEX idx_transaction_type (transaction_type),
-                INDEX idx_branch (branch)
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )");
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_account_code ON general_ledger (account_code)");
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_date ON general_ledger (date)");
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_reference ON general_ledger (reference)");
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_transaction_type ON general_ledger (transaction_type)");
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_branch ON general_ledger (branch)");
 
             // Safe migration: add branch column if missing from general_ledger
             $glCols = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'branch'")->fetchAll();

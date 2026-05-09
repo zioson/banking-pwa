@@ -172,12 +172,12 @@ function opEnsureGeneralLedgerTable(PDO $db): void {
         posted_by INT DEFAULT NULL,
         transaction_type VARCHAR(50) DEFAULT '',
         contra_account VARCHAR(50) DEFAULT '',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_account_code (account_code),
-        INDEX idx_date (date),
-        INDEX idx_reference (reference),
-        INDEX idx_transaction_type (transaction_type)
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_account_code ON general_ledger (account_code)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_date ON general_ledger (date)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_reference ON general_ledger (reference)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_transaction_type ON general_ledger (transaction_type)");
 
     // Safe migration: add transaction_type column + index
     $glCol = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'transaction_type'")->fetch();

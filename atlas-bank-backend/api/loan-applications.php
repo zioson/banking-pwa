@@ -70,12 +70,12 @@ function laEnsureSchema(PDO $db): void {
             loan_id INT DEFAULT NULL,
             guarantor_customer_id INT DEFAULT NULL,
             guarantor_account_id INT DEFAULT NULL,
-            guarantor_account_number VARCHAR(30) DEFAULT '',
-            INDEX idx_ref (ref),
-            INDEX idx_status (status),
-            INDEX idx_customer (customer_id),
-            INDEX idx_branch (branch)
+            guarantor_account_number VARCHAR(30) DEFAULT ''
         )");
+        $db->exec("CREATE INDEX IF NOT EXISTS idx_ref ON loan_applications (ref)");
+        $db->exec("CREATE INDEX IF NOT EXISTS idx_status ON loan_applications (status)");
+        $db->exec("CREATE INDEX IF NOT EXISTS idx_customer ON loan_applications (customer_id)");
+        $db->exec("CREATE INDEX IF NOT EXISTS idx_branch ON loan_applications (branch)");
     } catch (PDOException $e) {
         error_log("[LoanApps Schema] CREATE loan_applications failed: " . $e->getMessage());
     }
@@ -89,10 +89,10 @@ function laEnsureSchema(PDO $db): void {
             name VARCHAR(200) DEFAULT '',
             status VARCHAR(20) DEFAULT 'PENDING',
             updated_by INT DEFAULT NULL,
-            updated_at TIMESTAMP NULL,
-            INDEX idx_application (application_id),
-            INDEX idx_code (code)
+            updated_at TIMESTAMP NULL
         )");
+        $db->exec("CREATE INDEX IF NOT EXISTS idx_application ON loan_application_checks (application_id)");
+        $db->exec("CREATE INDEX IF NOT EXISTS idx_code ON loan_application_checks (code)");
     } catch (PDOException $e) {
         error_log("[LoanApps Schema] CREATE loan_application_checks failed: " . $e->getMessage());
     }
@@ -157,10 +157,10 @@ function laEnsureApprovalsSchema(PDO $db): void {
             decided_at    DATETIME        DEFAULT NULL,
             reason        TEXT            DEFAULT NULL,
             created_at    TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (id),
-            INDEX idx_approvals_entity (entity_type, entity_id),
-            INDEX idx_approvals_status (status)
+            PRIMARY KEY (id)
         )");
+        $db->exec("CREATE INDEX IF NOT EXISTS idx_approvals_entity ON approvals (entity_type, entity_id)");
+        $db->exec("CREATE INDEX IF NOT EXISTS idx_approvals_status ON approvals (status)");
     } catch (PDOException $e) {
         error_log("[LoanApps Schema] CREATE approvals failed: " . $e->getMessage());
     }

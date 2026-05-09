@@ -78,11 +78,11 @@ function lfEnsureSchema(PDO $db): void {
         posted_by INT DEFAULT NULL,
         transaction_type VARCHAR(50) DEFAULT '',
         contra_account VARCHAR(50) DEFAULT '',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_account_code (account_code),
-        INDEX idx_date (date),
-        INDEX idx_transaction_type (transaction_type)
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_account_code ON general_ledger (account_code)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_date ON general_ledger (date)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_transaction_type ON general_ledger (transaction_type)");
     // Safe migration: ensure branch column exists (required by lfPostGL inserts)
     lfAddCol($db, 'general_ledger', 'transaction_type', "VARCHAR(50) DEFAULT ''");
     lfAddCol($db, 'general_ledger', 'contra_account', "VARCHAR(50) DEFAULT ''");
@@ -100,9 +100,9 @@ function lfEnsureSchema(PDO $db): void {
         type VARCHAR(20) NOT NULL,
         category VARCHAR(100),
         description TEXT,
-        is_active BOOLEAN DEFAULT 1,
-        INDEX idx_code (code)
+        is_active BOOLEAN DEFAULT 1
     )");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_code ON chart_of_accounts (code)");
 
     // Ensure critical GL codes exist
     $criticalGLCodes = [

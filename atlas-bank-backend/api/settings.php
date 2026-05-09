@@ -30,19 +30,19 @@ $db = getDB();
 // ── Ensure table exists with ALL required columns ──
 // NOTE: The actual table uses 'value_data' column (from PG migration). We create with value_data
 // so CREATE TABLE IF NOT EXISTS won't conflict with the existing table.
-$db->exec("CREATE TABLE IF NOT EXISTS settings (
+$db->exec('CREATE TABLE IF NOT EXISTS settings (
     id SERIAL PRIMARY KEY,
-    key VARCHAR(191) NOT NULL,
+    "key" VARCHAR(191) NOT NULL,
     name VARCHAR(191) DEFAULT NULL,
-    category VARCHAR(100) NOT NULL DEFAULT 'General',
-    value_data TEXT DEFAULT '',
+    category VARCHAR(100) NOT NULL DEFAULT \'General\',
+    value_data TEXT DEFAULT \'\',
     description TEXT DEFAULT NULL,
     effective_from DATE DEFAULT NULL,
     requires_approval BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (key)
-)");
+    UNIQUE ("key")
+)');
 try { $db->exec('CREATE INDEX IF NOT EXISTS idx_settings_category ON "settings" (category)'); } catch (PDOException $e) {}
 
 // ── Self-heal: add columns that may be missing from older installs ──
@@ -171,7 +171,7 @@ switch ($method) {
         $where = buildWhere($_GET, ['category', '"key"'], ['category' => '=', '"key"' => '='], $params);
         try {
             $db = getDB();
-            $stmt = $db->prepare('SELECT * FROM settings ' . $where . ' ORDER BY category, \"key\" ASC');
+            $stmt = $db->prepare('SELECT id, "key", name, category, value_data AS "value", description, effective_from, requires_approval, created_at, updated_at FROM settings ' . $where . ' ORDER BY category, "key" ASC');
             $stmt->execute($params);
             successResponse($stmt->fetchAll());
         } catch (PDOException $e) { serverErrorResponse('Database error.'); }
@@ -398,7 +398,7 @@ switch ($method) {
                 $staff['department'], getClientIp());
 
             // Return the updated/created record
-            $fetchStmt = $db->prepare('SELECT * FROM settings WHERE "key" = :key LIMIT 1');
+            $fetchStmt = $db->prepare('SELECT id, "key", name, category, value_data AS "value", description, effective_from, requires_approval, created_at, updated_at FROM settings WHERE "key" = :key LIMIT 1');
             $fetchStmt->execute([':key' => $key]);
             $record = $fetchStmt->fetch();
             if ($record) {

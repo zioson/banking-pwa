@@ -587,10 +587,16 @@ switch ($method) {
                 'device_label'             => $deviceLabel
             ], 'Login successful.');
 
-        } catch (PDOException $e) {
+        } catch (Throwable $e) {
+            // ★ FIX: Catch Throwable instead of only PDOException.
+            // Previously, non-PDO exceptions (TypeError, ErrorException, etc.) would
+            // propagate to the router's catch block, returning a generic 500 with no
+            // diagnostic information. Now we catch everything and log the details.
+            error_log('[AUTH LOGIN ERROR] ' . get_class($e) . ': ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            error_log('[AUTH LOGIN ERROR] Trace: ' . $e->getTraceAsString());
             $msg = 'Authentication error occurred.';
             if (defined('APP_DEBUG') && APP_DEBUG) {
-                $msg .= ' ' . $e->getMessage();
+                $msg .= ' ' . get_class($e) . ': ' . $e->getMessage();
             }
             serverErrorResponse($msg);
         }

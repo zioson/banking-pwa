@@ -214,10 +214,10 @@ function ensureBalanceTrendsSchema(PDO $db): void {
             product_type   VARCHAR(50) NOT NULL,
             total_balance  DECIMAL(20,2) DEFAULT 0,
             total_available DECIMAL(20,2) DEFAULT 0,
-            created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_snapshot (snapshot_date),
-            INDEX idx_product (product_type)
+            created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )");
+        try { $db->exec('CREATE INDEX IF NOT EXISTS idx_snapshot ON balance_trends (snapshot_date)'); } catch (PDOException $ie) {}
+        try { $db->exec('CREATE INDEX IF NOT EXISTS idx_product ON balance_trends (product_type)'); } catch (PDOException $ie) {}
     } catch (PDOException $e) {
         error_log('[Reports Schema] CREATE TABLE balance_trends failed: ' . $e->getMessage());
     }
@@ -274,10 +274,10 @@ function ensureLoanFundTxSchema(PDO $db): void {
                 balance_after DECIMAL(20,2) NOT NULL,
                 branch VARCHAR(20) DEFAULT NULL,
                 operator VARCHAR(200),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_lft_date (date),
-                INDEX idx_lft_branch (branch)
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )");
+            try { $db->exec('CREATE INDEX IF NOT EXISTS idx_lft_date ON loan_fund_transactions (date)'); } catch (PDOException $ie) {}
+            try { $db->exec('CREATE INDEX IF NOT EXISTS idx_lft_branch ON loan_fund_transactions (branch)'); } catch (PDOException $ie) {}
         } else {
             reportSafeAddCol($db, 'loan_fund_transactions', 'branch', "VARCHAR(20) DEFAULT NULL");
             reportSafeAddCol($db, 'loan_fund_transactions', 'operator', "VARCHAR(200) DEFAULT ''");
@@ -1924,8 +1924,8 @@ switch ($method) {
 
                 // 4. Settings check
                 try {
-                    $feeSettings = $db->query("SELECT \"key\", \"value\" FROM settings WHERE LOWER(\"key\") LIKE 'withdrawal.fee_%' AND LOWER(\"key\") NOT LIKE '%mode%' ORDER BY \"key\"")->fetchAll(PDO::FETCH_ASSOC);
-                    $modeSettings = $db->query("SELECT \"key\", \"value\" FROM settings WHERE LOWER(\"key\") LIKE 'withdrawal.fee_mode_%' ORDER BY \"key\"")->fetchAll(PDO::FETCH_ASSOC);
+                    $feeSettings = $db->query("SELECT \"key\", value_data AS \"value\" FROM settings WHERE LOWER(\"key\") LIKE 'withdrawal.fee_%' AND LOWER(\"key\") NOT LIKE '%mode%' ORDER BY \"key\"")->fetchAll(PDO::FETCH_ASSOC);
+                    $modeSettings = $db->query("SELECT \"key\", value_data AS \"value\" FROM settings WHERE LOWER(\"key\") LIKE 'withdrawal.fee_mode_%' ORDER BY \"key\"")->fetchAll(PDO::FETCH_ASSOC);
                     $diagnostics['fee_settings'] = $feeSettings;
                     $diagnostics['fee_mode_settings'] = $modeSettings;
                 } catch (PDOException $e) {

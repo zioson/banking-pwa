@@ -179,11 +179,11 @@ function invEnsureSchema(PDO $db): void
         status VARCHAR(20) NOT NULL DEFAULT 'active',
         linked_staff_id INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_ish_branch (branch),
-        INDEX idx_ish_email (email),
-        INDEX idx_ish_linked_staff (linked_staff_id)
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_ish_branch ON investment_shareholders (branch)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_ish_email ON investment_shareholders (email)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_ish_linked_staff ON investment_shareholders (linked_staff_id)");
 
     $db->exec("CREATE TABLE IF NOT EXISTS investment_cycles (
         id SERIAL PRIMARY KEY,
@@ -200,10 +200,10 @@ function invEnsureSchema(PDO $db): void
         branch VARCHAR(100) DEFAULT '',
         created_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_ic_status (status),
-        INDEX idx_ic_branch (branch)
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_ic_status ON investment_cycles (status)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_ic_branch ON investment_cycles (branch)");
 
     $db->exec("CREATE TABLE IF NOT EXISTS investment_holdings (
         id SERIAL PRIMARY KEY,
@@ -216,10 +216,10 @@ function invEnsureSchema(PDO $db): void
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE (cycle_id, shareholder_id),
-        INDEX idx_ih_shareholder (shareholder_id),
         CONSTRAINT fk_ih_cycle FOREIGN KEY (cycle_id) REFERENCES investment_cycles(id) ON DELETE CASCADE,
         CONSTRAINT fk_ih_shareholder FOREIGN KEY (shareholder_id) REFERENCES investment_shareholders(id) ON DELETE CASCADE
     )");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_ih_shareholder ON investment_holdings (shareholder_id)");
 
     $db->exec("CREATE TABLE IF NOT EXISTS investment_transactions (
         id SERIAL PRIMARY KEY,
@@ -234,11 +234,11 @@ function invEnsureSchema(PDO $db): void
         branch VARCHAR(100) DEFAULT '',
         created_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_it_cycle (cycle_id),
-        INDEX idx_it_shareholder (shareholder_id),
         CONSTRAINT fk_it_cycle FOREIGN KEY (cycle_id) REFERENCES investment_cycles(id) ON DELETE SET NULL,
         CONSTRAINT fk_it_shareholder FOREIGN KEY (shareholder_id) REFERENCES investment_shareholders(id) ON DELETE SET NULL
     )");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_it_cycle ON investment_transactions (cycle_id)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_it_shareholder ON investment_transactions (shareholder_id)");
 
     $db->exec("CREATE TABLE IF NOT EXISTS investment_dividend_payments (
         id SERIAL PRIMARY KEY,
@@ -251,11 +251,11 @@ function invEnsureSchema(PDO $db): void
         status VARCHAR(20) NOT NULL DEFAULT 'Paid',
         txn_ref VARCHAR(60) DEFAULT '',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_idp_cycle (cycle_id),
-        INDEX idx_idp_shareholder (shareholder_id),
         CONSTRAINT fk_idp_cycle FOREIGN KEY (cycle_id) REFERENCES investment_cycles(id) ON DELETE CASCADE,
         CONSTRAINT fk_idp_shareholder FOREIGN KEY (shareholder_id) REFERENCES investment_shareholders(id) ON DELETE CASCADE
     )");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_idp_cycle ON investment_dividend_payments (cycle_id)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_idp_shareholder ON investment_dividend_payments (shareholder_id)");
 
     $db->exec("CREATE TABLE IF NOT EXISTS investment_purchase_lots (
         id BIGSERIAL PRIMARY KEY,
@@ -267,11 +267,11 @@ function invEnsureSchema(PDO $db): void
         branch VARCHAR(100) DEFAULT '',
         created_by INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_ipl_cycle_shareholder (cycle_id, shareholder_id),
-        INDEX idx_ipl_purchase_date (purchase_date),
         CONSTRAINT fk_ipl_cycle FOREIGN KEY (cycle_id) REFERENCES investment_cycles(id) ON DELETE CASCADE,
         CONSTRAINT fk_ipl_shareholder FOREIGN KEY (shareholder_id) REFERENCES investment_shareholders(id) ON DELETE CASCADE
     )");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_ipl_cycle_shareholder ON investment_purchase_lots (cycle_id, shareholder_id)");
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_ipl_purchase_date ON investment_purchase_lots (purchase_date)");
 
     invAddCol($db, 'investment_cycles', 'branch', "VARCHAR(100) DEFAULT ''");
     invAddCol($db, 'investment_transactions', 'branch', "VARCHAR(100) DEFAULT ''");

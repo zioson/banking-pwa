@@ -91,11 +91,11 @@ $db->exec("CREATE TABLE IF NOT EXISTS staff (
     created_at            TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     updated_at            TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    UNIQUE (username),
-    INDEX idx_staff_role (role),
-    INDEX idx_staff_department (department),
-    INDEX idx_staff_status (employment_status)
+    UNIQUE (username)
 )");
+try { $db->exec('CREATE INDEX IF NOT EXISTS idx_staff_role ON staff (role)'); } catch (PDOException $e) {}
+try { $db->exec('CREATE INDEX IF NOT EXISTS idx_staff_department ON staff (department)'); } catch (PDOException $e) {}
+try { $db->exec('CREATE INDEX IF NOT EXISTS idx_staff_status ON staff (employment_status)'); } catch (PDOException $e) {}
 
 // ── Migration: Add missing columns for existing installations ──
 try {
@@ -143,9 +143,9 @@ $db->exec("CREATE TABLE IF NOT EXISTS staff_branches (
     branch_name VARCHAR(255) NOT NULL,
     PRIMARY KEY (id),
     UNIQUE (staff_id, branch_name),
-    INDEX idx_sb_branch (branch_name),
     FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE
 )");
+try { $db->exec('CREATE INDEX IF NOT EXISTS idx_sb_branch ON staff_branches (branch_name)'); } catch (PDOException $e) {}
 
 $db->exec("CREATE TABLE IF NOT EXISTS staff_modules (
     id          INTEGER NOT NULL,
@@ -154,9 +154,9 @@ $db->exec("CREATE TABLE IF NOT EXISTS staff_modules (
     access_level VARCHAR(20) NOT NULL DEFAULT 'FULL',
     PRIMARY KEY (id),
     UNIQUE (staff_id, module_name),
-    INDEX idx_sm_module (module_name),
     FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE
 )");
+try { $db->exec('CREATE INDEX IF NOT EXISTS idx_sm_module ON staff_modules (module_name)'); } catch (PDOException $e) {}
 
 /**
  * Normalise module names from the frontend to canonical display names.
