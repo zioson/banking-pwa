@@ -11,6 +11,15 @@
 RewriteEngine On
 
 # -----------------------------------------------------------
+# DirectoryIndex — Serve the frontend console at the directory root
+# When someone visits /atlas-bank-backend/, Apache looks for
+# DirectoryIndex files. We want the HTML console, NOT index.php.
+# The API health check is still available at /atlas-bank-backend/index.php
+# or /atlas-bank-backend/api/?health
+# -----------------------------------------------------------
+DirectoryIndex atlas-bank-enterprise-console-v10.html index.php
+
+# -----------------------------------------------------------
 # RewriteBase — CRITICAL for subdirectory deployments
 # On Render, the app is served from /atlas-bank-backend/ subdirectory.
 # When Apache processes this .htaccess, the path is already relative
@@ -52,14 +61,9 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^api/(.*)$ router.php [QSA,L]
 
 # -----------------------------------------------------------
-# Serve the frontend HTML for non-API, non-file requests
-# When someone visits the subdirectory root, serve the console.
+# Serve the frontend HTML for /console or /app shortcuts
+# (DirectoryIndex handles the root path above)
 # -----------------------------------------------------------
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^$ atlas-bank-enterprise-console-v10.html [L]
-
-# Also serve the console for direct access to /console or /app
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(console|app)$ atlas-bank-enterprise-console-v10.html [L]
@@ -83,8 +87,14 @@ RewriteRule ^(console|app)$ atlas-bank-enterprise-console-v10.html [L]
     # Referrer Policy
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
 
-    # Content Security Policy (relaxed for API)
-    Header always set Content-Security-Policy "default-src 'self'; script-src 'none'; style-src 'none'; img-src 'self' data:; font-src 'none'; connect-src 'self'; frame-ancestors 'none';"
+    # Content Security Policy — only apply strict CSP to API responses (JSON).
+    # The frontend HTML file has its own CSP meta tag with appropriate rules
+    # for scripts, styles, and external resources. Do NOT override it here
+    # or the console will break (scripts blocked, styles blocked).
+    # Apply API-only CSP only when the response is JSON (detected via URL pattern).
+    <FilesMatch "\.php$">
+        Header always set Content-Security-Policy "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+    </FilesMatch>
 
     # HSTS — enable in production with HTTPS
     <If "%{HTTPS} == 'on'">
