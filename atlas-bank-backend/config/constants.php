@@ -452,8 +452,8 @@ define('MAX_PAGE_SIZE', 100);
 // -----------------------------------------------------------
 // Default Currency
 // -----------------------------------------------------------
-define('DEFAULT_CURRENCY', 'XAF');
-define('CURRENCY_SYMBOL', 'FCFA');
+if (!defined('DEFAULT_CURRENCY')) define('DEFAULT_CURRENCY', 'XAF');
+if (!defined('CURRENCY_SYMBOL')) define('CURRENCY_SYMBOL', 'FCFA');
 
 // -----------------------------------------------------------
 // Country Code
