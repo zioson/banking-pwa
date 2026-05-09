@@ -129,9 +129,12 @@ function rptBindBranchFilter(PDO $db, PDOStatement $stmt, array $staff, string $
  */
 function reportSafeAddCol(PDO $db, string $table, string $col, string $def): void {
     try {
-        $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_name = ? AND column_name = ?");
-        $r->execute([$table, $col]);
-        if (!$r) $db->exec("ALTER TABLE $table ADD COLUMN $col $def");
+        $schema = defined('DB_SCHEMA') ? DB_SCHEMA : 'atlas_bank_schema';
+        $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_schema = :schema AND table_name = :table AND column_name = :col");
+        $r->execute([':schema' => $schema, ':table' => $table, ':col' => $col]);
+        if (!$r->fetchColumn()) {
+            $db->exec("ALTER TABLE $table ADD COLUMN $col $def");
+        }
     } catch (PDOException $e) {
         error_log('[Reports Schema] safeAddCol(' . $table . '.' . $col . ') failed: ' . $e->getMessage());
     }
@@ -142,8 +145,12 @@ function reportSafeAddCol(PDO $db, string $table, string $col, string $def): voi
  */
 function reportAddCol(PDO $db, string $col, string $def): void {
     try {
-        $r = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'profit_ledger' AND column_name = '$col'")->fetch();
-        if (!$r) $db->exec("ALTER TABLE profit_ledger ADD COLUMN $col $def");
+        $schema = defined('DB_SCHEMA') ? DB_SCHEMA : 'atlas_bank_schema';
+        $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_schema = :schema AND table_name = 'profit_ledger' AND column_name = :col");
+        $r->execute([':schema' => $schema, ':col' => $col]);
+        if (!$r->fetchColumn()) {
+            $db->exec("ALTER TABLE profit_ledger ADD COLUMN $col $def");
+        }
     } catch (PDOException $e) {
         error_log('[Reports Schema] reportAddCol(' . $col . ') failed: ' . $e->getMessage());
     }
@@ -239,8 +246,9 @@ function ensureTransactionsSchema(PDO $db): void {
 
 function reportHasTable(PDO $db, string $table): bool {
     try {
-        $stmt = $db->prepare("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' LIKE ?");
-        $stmt->execute([$table]);
+        $schema = defined('DB_SCHEMA') ? DB_SCHEMA : 'atlas_bank_schema';
+        $stmt = $db->prepare("SELECT table_name FROM information_schema.tables WHERE table_schema = :schema AND table_name = :table");
+        $stmt->execute([':schema' => $schema, ':table' => $table]);
         return (bool)$stmt->fetchColumn();
     } catch (PDOException $e) {
         return false;
@@ -285,11 +293,13 @@ function ensureLoanFundTxSchema(PDO $db): void {
             reportSafeAddCol($db, 'loan_fund_transactions', 'ref', "VARCHAR(50) DEFAULT ''");
         }
         try {
+            // PostgreSQL: UPDATE with JOIN requires FROM clause instead of MySQL's JOIN syntax
             $db->exec("
                 UPDATE loan_fund_transactions lft
-                JOIN loans l ON l.id = lft.loan_id
-                SET lft.branch = l.branch
-                WHERE (lft.branch IS NULL OR TRIM(lft.branch) = '')
+                SET branch = l.branch
+                FROM loans l
+                WHERE l.id = lft.loan_id
+                  AND (lft.branch IS NULL OR TRIM(lft.branch) = '')
                   AND l.branch IS NOT NULL AND TRIM(l.branch) <> ''
             ");
         } catch (PDOException $e) {}
