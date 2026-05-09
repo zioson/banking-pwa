@@ -288,7 +288,7 @@ function moneyFormat($amount, string $symbol = 'FCFA'): string
  */
 function formatDate(string $dateString, string $format = 'd M Y'): string
 {
-    if (empty($dateString) || $dateString === '0000-00-00' || $dateString === '0000-00-00 00:00:00') {
+    if (empty($dateString)) {
         return '-';
     }
     return date($format, strtotime($dateString));
@@ -302,7 +302,7 @@ function formatDate(string $dateString, string $format = 'd M Y'): string
  */
 function formatDateTime(string $dateString): string
 {
-    if (empty($dateString) || $dateString === '0000-00-00 00:00:00') {
+    if (empty($dateString)) {
         return '-';
     }
     return date('d M Y H:i', strtotime($dateString));
@@ -983,7 +983,7 @@ function postToGL(
                 ':desc' => $desc,
                 ':td' => $amount,
                 ':tc' => $amount,
-                ':balanced' => 1,
+                ':balanced' => true,
                 ':by' => $staffId
             ]);
 
