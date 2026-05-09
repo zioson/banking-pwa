@@ -14,8 +14,17 @@
  */
 
 // ── Global error handler — prevents raw PHP errors from leaking to client ──
+// ★ FIX: Don't throw for E_WARNING/E_NOTICE during bootstrap — constants.php
+// "already defined" warnings are harmless (caused by require_once edge cases)
+// and throwing ErrorException for them kills the entire request before the
+// API endpoint's own try-catch can handle anything.
 set_error_handler(function($severity, $msg, $file, $line) {
     if (!(error_reporting() & $severity)) return;
+    // Log warnings/notices instead of throwing — they're usually non-fatal
+    if ($severity === E_WARNING || $severity === E_NOTICE || $severity === E_USER_WARNING || $severity === E_USER_NOTICE) {
+        error_log("[PHP {$severity}] {$msg} in {$file}:{$line}");
+        return true; // Suppress the warning, don't throw
+    }
     throw new ErrorException($msg, 0, $severity, $file, $line);
 });
 
