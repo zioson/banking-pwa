@@ -2,9 +2,33 @@
 # Atlas Bank Enterprise Operations Console
 # Apache .htaccess - URL Rewriting
 # ============================================================
+# IMPORTANT: When deployed in a subdirectory (e.g. /atlas-bank-backend/),
+# Apache processes .htaccess relative to that directory. The RewriteBase
+# ensures that rewrites work correctly regardless of deployment path.
+# ============================================================
 
 # Enable rewrite engine
 RewriteEngine On
+
+# -----------------------------------------------------------
+# RewriteBase — CRITICAL for subdirectory deployments
+# On Render, the app is served from /atlas-bank-backend/ subdirectory.
+# When Apache processes this .htaccess, the path is already relative
+# to the directory, so RewriteBase / works for both root and subdirectory.
+# However, for explicit clarity and to prevent path resolution issues:
+# -----------------------------------------------------------
+# Auto-detect: if SCRIPT_NAME contains a subdirectory, use it.
+# For Render deployment at /atlas-bank-backend/:
+#   RewriteBase /atlas-bank-backend/
+# For root deployment:
+#   RewriteBase /
+# Comment/uncomment the appropriate line below:
+
+# ★ For Render deployment (subdirectory):
+RewriteBase /atlas-bank-backend/
+
+# For root deployment (uncomment if deploying at web root):
+# RewriteBase /
 
 # -----------------------------------------------------------
 # CRITICAL FIX: Pass Authorization header to PHP
@@ -16,12 +40,29 @@ RewriteEngine On
     CGIPassAuth On
 </IfModule>
 SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
-RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization},L]
 
+# -----------------------------------------------------------
 # Route all /api/* requests through router.php
+# The RewriteBase above handles the subdirectory prefix, so the
+# RewriteRule only needs to match the relative path "api/..."
+# -----------------------------------------------------------
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^api/(.*)$ router.php [QSA,L]
+
+# -----------------------------------------------------------
+# Serve the frontend HTML for non-API, non-file requests
+# When someone visits the subdirectory root, serve the console.
+# -----------------------------------------------------------
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^$ atlas-bank-enterprise-console-v10.html [L]
+
+# Also serve the console for direct access to /console or /app
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(console|app)$ atlas-bank-enterprise-console-v10.html [L]
 
 # -----------------------------------------------------------
 # Security Headers
@@ -45,8 +86,10 @@ RewriteRule ^api/(.*)$ router.php [QSA,L]
     # Content Security Policy (relaxed for API)
     Header always set Content-Security-Policy "default-src 'self'; script-src 'none'; style-src 'none'; img-src 'self' data:; font-src 'none'; connect-src 'self'; frame-ancestors 'none';"
 
-    # HSTS (enable in production with appropriate max-age)
-    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    # HSTS — enable in production with HTTPS
+    <If "%{HTTPS} == 'on'">
+        Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    </If>
 </IfModule>
 
 # -----------------------------------------------------------
@@ -79,7 +122,7 @@ Options -Indexes
 
 # Deny access to config and includes directories
 <IfModule mod_rewrite.c>
-    RewriteRule ^(config|includes|database|middleware)/ - [F,L]
+    RewriteRule ^(config|includes|database|middleware|storage)/ - [F,L]
 </IfModule>
 
 # -----------------------------------------------------------
@@ -110,14 +153,5 @@ AddDefaultCharset UTF-8
     ExpiresByType text/css "access plus 1 week"
     ExpiresByType application/javascript "access plus 1 week"
     ExpiresByType application/json "access plus 0 seconds"
+    ExpiresByType text/html "access plus 0 seconds"
 </IfModule>
-
-# -----------------------------------------------------------
-# Error documents — only for non-API requests (API sends its own JSON errors)
-# -----------------------------------------------------------
-# Do NOT use ErrorDocument for API errors — router.php handles its own JSON responses
-# ErrorDocument 400 /index.php
-# ErrorDocument 401 /index.php
-# ErrorDocument 403 /index.php
-# ErrorDocument 404 /index.php
-# ErrorDocument 500 /index.php

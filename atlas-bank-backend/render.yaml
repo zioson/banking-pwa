@@ -2,9 +2,10 @@ services:
   - type: web
     name: atlas-bank-backend-pg
     runtime: php
-    buildCommand: |
-      echo "Build complete"
-    startCommand: bash start.sh
+    # Render's PHP runtime uses Apache by default.
+    # No custom startCommand needed — Apache serves from the project root.
+    # The .htaccess file handles URL rewriting for /api/* routes.
+    # The frontend HTML file is served from the project root as well.
     envVars:
       - key: APP_ENV
         value: production
