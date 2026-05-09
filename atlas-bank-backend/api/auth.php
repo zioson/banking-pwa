@@ -6,6 +6,11 @@
  * Public endpoint - no authentication required.
  */
 
+// ★ FIX: Wrap entire auth endpoint in top-level try-catch so that ANY exception
+// (including ErrorException from warnings, TypeError, etc.) is caught and reported
+// with full debug info instead of returning a generic 500 from the router.
+try {
+
 // Safety net: ensure SESSION_NAME is defined even if database.php wasn't loaded yet.
 // (Normally defined in config/database.php and loaded via helpers.php chain.)
 if (!defined('SESSION_NAME')) {
@@ -24,6 +29,8 @@ require_once __DIR__ . '/../middleware/csrf.php';
 // They can be changed by admins via the System Settings UI.
 try {
     $dbSeed = getDB();
+    // ★ Self-heal: ensure mfa_pending_tokens table exists (required by MFA login flow)
+    _ensureMfaPendingTokensTable($dbSeed);
     // NOTE: Settings table uses 'value_data' column (PG migration artifact). 
     // The getSetting() function in helpers.php handles both 'value' and 'value_data'.
     // INSERT statements use 'value_data' to match the actual column name.
@@ -48,6 +55,11 @@ try {
         } catch (PDOException $e) { /* already exists or table not ready */ }
     }
 } catch (PDOException $e) { /* DB not available yet */ }
+// ★ FIX: Also catch Throwable for non-PDO errors during seeding (e.g., ErrorException
+// from "constant already defined" warnings that the old error handler would throw)
+catch (Throwable $e) {
+    error_log('[AUTH SEED ERROR] ' . get_class($e) . ': ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+}
 
 $method = $_ROUTE['method'];
 $routeId = $_ROUTE['id'] ?? null;
@@ -642,4 +654,24 @@ switch ($method) {
 
     default:
         errorResponse('Method not allowed for auth endpoint. Use POST for login, DELETE for logout.', 405);
+}
+
+} catch (Throwable $e) {
+    // ★ Top-level catch: any exception that escapes the switch statement above.
+    // This prevents the router from catching it and returning a generic 500
+    // without debug info (which was the root cause of the invisible auth errors).
+    error_log('[AUTH TOP-LEVEL ERROR] ' . get_class($e) . ': ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    error_log('[AUTH TOP-LEVEL ERROR] Trace: ' . $e->getTraceAsString());
+    $isDebug = defined('APP_DEBUG') && APP_DEBUG;
+    http_response_code(500);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode([
+        'success' => false,
+        'error'   => $isDebug ? ('Auth error: ' . get_class($e)) : 'Internal server error.',
+        'message' => $isDebug ? $e->getMessage() : 'An unexpected error occurred.',
+        'file'    => $isDebug ? basename($e->getFile()) : null,
+        'line'    => $isDebug ? $e->getLine() : null,
+        'trace'   => $isDebug ? $e->getTraceAsString() : null,
+    ]);
+    exit;
 }
