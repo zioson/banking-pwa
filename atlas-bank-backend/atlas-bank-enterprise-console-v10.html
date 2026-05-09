@@ -7117,7 +7117,7 @@ async function handleDepositWithdraw(e) {
     // Rollback: remove from in-memory cache — transaction was NOT saved
     const idx = DB.transactions.findIndex(t => t.ref === newRef);
     if (idx >= 0) DB.transactions.splice(idx, 1);
-    showToast('error','Database Save Failed','The transaction could not be saved to the database. Please check your server connection (XAMPP MySQL must be running) and try again. If the problem persists, check the Apache error log at xampp/apache/logs/error.log');
+    showToast('error','Database Save Failed','The transaction could not be saved to the database. Please check your server connection and try again. If the problem persists, contact the system administrator.');
     renderTransactions();
     return false;
   }
