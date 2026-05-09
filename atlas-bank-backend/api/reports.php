@@ -1989,7 +1989,7 @@ switch ($method) {
                 $sql = 'INSERT INTO profit_ledger (' . implode(', ', $insertCols) . ') VALUES (' . implode(', ', array_keys($insertParams)) . ')';
                 $stmt = $db->prepare($sql);
                 $stmt->execute($insertParams);
-                $newId = (int)$db->lastInsertId();
+                $newId = (int)$db->lastInsertId('saved_reports_id_seq');
                 logAudit($staff['full_name'] ?? 'System', 'PROFIT_LEDGER_ENTRY', 'REPORTS', (string)$newId, 'SUCCESS',
                     'Recorded profit ledger entry for branch ' . ($input['branch'] ?? 'all'), $staff['department'] ?? '', getClientIp());
                 createdResponse(['id' => $newId], 'Profit ledger entry recorded.');

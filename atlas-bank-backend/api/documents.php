@@ -231,8 +231,8 @@ switch ($method) {
                     ':by' => $staff['id'], ':byname' => $staff['full_name'],
                     ':summary' => $summaryJson
                 ]);
-                logAudit($staff['full_name'], 'DOCUMENT_GENERATE', 'DOCUMENT', (string)$db->lastInsertId(), 'SUCCESS', 'Generated document ' . $docNum, $staff['department'], getClientIp());
-                createdResponse(['id' => (int)$db->lastInsertId(), 'document_number' => $docNum], 'Document generated successfully.');
+                logAudit($staff['full_name'], 'DOCUMENT_GENERATE', 'DOCUMENT', (string)$db->lastInsertId('generated_documents_id_seq'), 'SUCCESS', 'Generated document ' . $docNum, $staff['department'], getClientIp());
+                createdResponse(['id' => (int)$db->lastInsertId('generated_documents_id_seq'), 'document_number' => $docNum], 'Document generated successfully.');
             }
         } catch (PDOException $e) {
             error_log('[Documents POST] PDO error: ' . $e->getMessage());

@@ -270,7 +270,7 @@ switch ($method) {
                 ':rcyc' => $rcyc, ':efrom' => $efrom, ':eto' => $eto ?: null,
                 ':nrev' => $nextReview, ':cby' => $staff['full_name']
             ]);
-            $newId = (int)$db->lastInsertId();
+            $newId = (int)$db->lastInsertId('policies_id_seq');
 
             // Create initial revision (v1)
             $db->prepare('INSERT INTO policy_revisions (policy_id, revision, version, name, description, content, category, severity, owner, effective_from, effective_to, change_summary, changed_by) VALUES (:pid, 1, :ver, :name, :desc, :content, :cat, :sev, :owner, :efrom, :eto, :summary, :by)')->execute([

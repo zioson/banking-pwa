@@ -161,7 +161,7 @@ switch ($method) {
                 ':currency' => sanitize($input['currency'] ?? 'XAF'),
                 ':opened'   => date('Y-m-d')
             ]);
-            $newId = (int)$db->lastInsertId();
+            $newId = (int)$db->lastInsertId('accounts_id_seq');
             logAudit($staff['full_name'], 'ACCOUNT_CREATE', 'ACCOUNT', (string)$newId, 'SUCCESS', 'Opened account ' . $accNum, $staff['department'], getClientIp());
             createdResponse(['id' => $newId, 'account_number' => $accNum], 'Account opened successfully.');
         } catch (PDOException $e) { serverErrorResponse('Failed to create account.'); }

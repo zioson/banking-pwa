@@ -2101,7 +2101,7 @@ switch ($method) {
                 ':guarantor_account_number' => $guarantorAccountNumber,
                 ':created_by' => (int)($staff['id'] ?? 0)
             ]);
-            $newId = (int)$db->lastInsertId();
+            $newId = (int)$db->lastInsertId('loans_id_seq');
 
             logAudit($staff['full_name'], 'LOAN_CREATE', 'LOAN', (string)$newId, 'SUCCESS', 'Created loan ' . $loanNum, $staff['department'], getClientIp());
             createdResponse(['id' => $newId, 'loan_number' => $loanNum], 'Loan created successfully.');

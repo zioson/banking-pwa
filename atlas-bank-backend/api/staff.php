@@ -727,7 +727,7 @@ switch ($method) {
             ':ip'          => sanitize($input['ip_restrictions'] ?? 'Any'),
             ':force'       => 1  // Always force password change for new accounts
         ]);
-        $newId = (int)$db->lastInsertId();
+        $newId = (int)$db->lastInsertId('staff_id_seq');
 
         // Sync branch and module assignments
         if (is_array($branches)) syncBranches($db, $newId, $branches);

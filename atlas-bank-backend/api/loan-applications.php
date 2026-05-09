@@ -568,7 +568,7 @@ switch ($method) {
                     ':guarantor_account_id' => $guarantorAccountId,
                     ':guarantor_account_number' => $guarantorAccountNumber,
                 ]);
-                $newId = (int)$db->lastInsertId();
+                $newId = (int)$db->lastInsertId('loan_applications_id_seq');
 
                 $defaultChecks = [
                     ['code' => 'KYC_CHECK', 'name' => 'KYC Verification'],

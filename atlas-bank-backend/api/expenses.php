@@ -145,7 +145,7 @@ switch ($method) {
                 ':opname'  => $staff['full_name']
             ]);
 
-            $newId = (int)$db->lastInsertId();
+            $newId = (int)$db->lastInsertId('expenses_id_seq');
             logAudit(
                 $staff['full_name'], 'EXPENSE_CREATE', 'EXPENSE',
                 (string)$newId, 'SUCCESS',

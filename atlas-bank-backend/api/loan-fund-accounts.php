@@ -755,7 +755,7 @@ switch ($method) {
                             $staff['department'] ?? '', getClientIp());
 
                         successResponse([
-                            'id' => $db->lastInsertId(), 'ref' => $ref,
+                            'id' => $db->lastInsertId('loan_fund_transactions_id_seq'), 'ref' => $ref,
                             'accountNumber' => $accountNumber, 'type' => $type,
                             'amount' => $amount,
                             'balanceAfter' => $currentGLBalance,  // Unchanged
@@ -898,7 +898,7 @@ switch ($method) {
                             $staff['department'] ?? '', getClientIp());
 
                         successResponse([
-                            'id' => $db->lastInsertId(), 'ref' => $ref,
+                            'id' => $db->lastInsertId('loan_fund_transactions_id_seq'), 'ref' => $ref,
                             'accountNumber' => $accountNumber, 'type' => $type,
                             'amount' => $amount,
                             'balanceAfter' => $newGLBalance,
@@ -951,7 +951,7 @@ switch ($method) {
                             $staff['department'] ?? '', getClientIp());
 
                         successResponse([
-                            'id' => $db->lastInsertId(), 'ref' => $ref,
+                            'id' => $db->lastInsertId('loan_fund_transactions_id_seq'), 'ref' => $ref,
                             'accountNumber' => $accountNumber, 'type' => $type,
                             'amount' => $amount,
                             'balanceAfter' => $newGLBalance,
@@ -1031,7 +1031,7 @@ switch ($method) {
                             $staff['department'] ?? '', getClientIp());
 
                         successResponse([
-                            'id' => $db->lastInsertId(), 'ref' => $ref,
+                            'id' => $db->lastInsertId('loan_fund_transactions_id_seq'), 'ref' => $ref,
                             'accountNumber' => $accountNumber, 'type' => $type,
                             'amount' => $amount,
                             'balanceAfter' => $newBalance,
@@ -1063,7 +1063,7 @@ switch ($method) {
                             $staff['department'] ?? '', getClientIp());
 
                         successResponse([
-                            'id' => $db->lastInsertId(), 'ref' => $ref,
+                            'id' => $db->lastInsertId('loan_fund_transactions_id_seq'), 'ref' => $ref,
                             'accountNumber' => $accountNumber, 'type' => $type,
                             'amount' => $amount,
                             'balanceAfter' => $newBalance,

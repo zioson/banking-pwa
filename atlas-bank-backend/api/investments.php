@@ -427,7 +427,7 @@ function invCurrentShareholder(PDO $db, array $staff): array
         ':br' => $branch,
         ':sid' => $staffId
     ]);
-    $id = (int)$db->lastInsertId();
+    $id = (int)$db->lastInsertId('investments_id_seq');
     $sel = $db->prepare("SELECT * FROM investment_shareholders WHERE id = :id");
     $sel->execute([':id' => $id]);
     return (array)$sel->fetch(PDO::FETCH_ASSOC);
@@ -939,7 +939,7 @@ if ($method === 'POST' && $id === 'shareholders') {
                ':phone' => $phone,
                ':br' => $branch
            ]);
-        $sid = (int)$db->lastInsertId();
+        $sid = (int)$db->lastInsertId('investments_id_seq');
 
         if ($shares > 0) {
             invEnsureOperatingAccountArtifacts($db);
@@ -1092,7 +1092,7 @@ if ($method === 'POST' && $id === 'cycles' && $sub === '') {
                ':br' => $branch,
                ':uid' => $staffId
            ]);
-        $cid = (int)$db->lastInsertId();
+        $cid = (int)$db->lastInsertId('investments_id_seq');
 
         $db->prepare("INSERT INTO investment_transactions
                       (txn_ref, txn_date, shareholder_id, cycle_id, action, shares, amount, description, branch, created_by)

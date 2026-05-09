@@ -37,7 +37,7 @@ try {
     $securityDefaults = [
         ['key' => 'security.max_login_attempts', 'name' => 'Max Login Attempts', 'category' => 'Security', 'value' => '5', 'description' => 'Number of failed login attempts before account is temporarily locked.'],
         ['key' => 'security.lockout_duration', 'name' => 'Lockout Duration (minutes)', 'category' => 'Security', 'value' => '30', 'description' => 'Duration in minutes that a locked account remains locked before auto-unlock.'],
-        ['key' => 'security.session_timeout', 'name' => 'Session Timeout (minutes)', 'category' => 'Security', 'value' => '15', 'description' => 'Session inactivity timeout in minutes. After this period, the user must log in again.'],
+        ['key' => 'security.session_timeout', 'name' => 'Session Timeout (minutes)', 'category' => 'Security', 'value' => '480', 'description' => 'Session inactivity timeout in minutes. After this period, the user must log in again.'],
         ['key' => 'security.max_concurrent_sessions', 'name' => 'Max Concurrent Sessions', 'category' => 'Security', 'value' => '3', 'description' => 'Maximum number of simultaneous active sessions per user. Oldest sessions are terminated when the limit is reached.']
     ];
     foreach ($securityDefaults as $def) {
@@ -127,7 +127,7 @@ switch ($method) {
             $csrfToken = generateCsrfToken();
         }
 
-        $sessionTimeoutMinutes = 15;
+        $sessionTimeoutMinutes = (int)getSetting($db, 'security.session_timeout', 480);
 
         if (!$staff) {
             // No active session — return CSRF token only for pre-login requests.
@@ -462,7 +462,7 @@ switch ($method) {
             }
 
             // Read session timeout from settings (in minutes), fallback to PHP constant or 480
-            $sessionTimeoutMinutes = 15;
+            $sessionTimeoutMinutes = (int)getSetting($db, 'security.session_timeout', 480);
 
             // Create session
             $sessionToken = createSession(

@@ -866,7 +866,7 @@ switch ($method) {
                     $sql = 'INSERT INTO transactions (' . implode(', ', $insertColNames) . ') VALUES (' . implode(', ', $insertValues) . ')';
                     $stmt = $db->prepare($sql);
                     $stmt->execute($bindParamList);
-                    $newId = (int)$db->lastInsertId();
+                    $newId = (int)$db->lastInsertId('transactions_id_seq');
 
                     // ── Update account balance atomically ──
                     // Only for POSTED transactions (skip PENDING / PENDING_APPROVAL)
