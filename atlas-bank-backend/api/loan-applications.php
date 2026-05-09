@@ -121,11 +121,9 @@ function laEnsureSchema(PDO $db): void {
     // ★ CRITICAL: DISBURSED status prevents re-disbursement loop on page refresh.
     // Without it, already-disbursed applications reappear as APPROVED in the UI.
     try {
-        $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'loan_applications' AND column_name = 'status'")->fetch();
-        if ($col && str_contains($col['Type'], 'VARCHAR(20)')) {
-            if (!str_contains($col['Type'], 'DISBURSED')) {
-                $db->exec("ALTER TABLE loan_applications ALTER COLUMN status TYPE VARCHAR(20)");
-            }
+        $col = $db->query("SELECT column_name, udt_name FROM information_schema.columns WHERE table_name = 'loan_applications' AND column_name = 'status'")->fetch();
+        if ($col && ($col['udt_name'] === 'loan_applications_status' || str_contains(strtolower($col['udt_name'] ?? ''), 'enum'))) {
+            $db->exec("ALTER TABLE loan_applications ALTER COLUMN status TYPE VARCHAR(30)");
         }
     } catch (PDOException $e) {
         error_log("[LoanApps Schema] ALTER status failed: " . $e->getMessage());
@@ -152,9 +150,9 @@ function laEnsureApprovalsSchema(PDO $db): void {
             branch        VARCHAR(20)     DEFAULT NULL,
             value         TEXT            DEFAULT NULL,
             details       TEXT            DEFAULT NULL,
-            submitted_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            submitted_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
             decided_by    INTEGER    DEFAULT NULL,
-            decided_at    DATETIME        DEFAULT NULL,
+            decided_at    TIMESTAMP       DEFAULT NULL,
             reason        TEXT            DEFAULT NULL,
             created_at    TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id)

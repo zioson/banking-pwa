@@ -75,16 +75,16 @@ function ensureDocumentColumns(PDO $db): void {
 
     // ── Fix restrictive ENUMs to VARCHAR ──
     try {
-        $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'generated_documents' AND column_name = 'type'")->fetch();
-        if ($col && str_contains($col['Type'], 'enum(')) {
+        $col = $db->query("SELECT column_name, udt_name FROM information_schema.columns WHERE table_name = 'generated_documents' AND column_name = 'type'")->fetch();
+        if ($col && ($col['udt_name'] === 'generated_documents_type' || str_contains(strtolower($col['udt_name'] ?? ''), 'enum'))) {
             $db->exec('ALTER TABLE generated_documents ALTER COLUMN "type" TYPE VARCHAR(20)');
         }
     } catch (PDOException $e) {
         error_log("[Schema] Document type ENUM fix failed: " . $e->getMessage());
     }
     try {
-        $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'generated_documents' AND column_name = 'status'")->fetch();
-        if ($col && str_contains($col['Type'], 'enum(')) {
+        $col = $db->query("SELECT column_name, udt_name FROM information_schema.columns WHERE table_name = 'generated_documents' AND column_name = 'status'")->fetch();
+        if ($col && ($col['udt_name'] === 'generated_documents_status' || str_contains(strtolower($col['udt_name'] ?? ''), 'enum'))) {
             $db->exec('ALTER TABLE generated_documents ALTER COLUMN "status" TYPE VARCHAR(20)');
         }
     } catch (PDOException $e) {
@@ -94,7 +94,7 @@ function ensureDocumentColumns(PDO $db): void {
 
 $db = getDB();
 $db->exec("CREATE TABLE IF NOT EXISTS generated_documents (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     document_number VARCHAR(100) NOT NULL,
     type VARCHAR(20) NOT NULL,
     subtype VARCHAR(100) DEFAULT NULL,

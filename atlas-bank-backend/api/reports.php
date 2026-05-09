@@ -320,13 +320,13 @@ function buildPLDateFilters(array $get): array {
     $dateTo = sanitize($get['date_to'] ?? '');
 
     if (!empty($dateFrom)) {
-        $plWhere .= ($plWhere ? ' AND ' : ' WHERE ') . 'DATE(created_at) >= :pl_df';
+        $plWhere .= ($plWhere ? ' AND ' : ' WHERE ') . 'created_at::DATE >= :pl_df';
         $plParams[':pl_df'] = $dateFrom;
         $expWhere .= ($expWhere ? ' AND ' : ' WHERE ') . 'date >= :exp_df';
         $expParams[':exp_df'] = $dateFrom;
     }
     if (!empty($dateTo)) {
-        $plWhere .= ($plWhere ? ' AND ' : ' WHERE ') . 'DATE(created_at) <= :pl_dt';
+        $plWhere .= ($plWhere ? ' AND ' : ' WHERE ') . 'created_at::DATE <= :pl_dt';
         $plParams[':pl_dt'] = $dateTo;
         $expWhere .= ($expWhere ? ' AND ' : ' WHERE ') . 'date <= :exp_dt';
         $expParams[':exp_dt'] = $dateTo;
@@ -1100,7 +1100,7 @@ switch ($method) {
 
                         // Previous period income (same filters except dates)
                         // ★ FIX (FR-NP-001): Add gl_type='INCOME' filter to match main summary.
-                        $prevIncWhere = ' WHERE DATE(created_at) >= :prev_df AND DATE(created_at) <= :prev_dt '
+                        $prevIncWhere = ' WHERE created_at::DATE >= :prev_df AND created_at::DATE <= :prev_dt '
                             . ($bf['pl_branch'] ?? '') . $catFilter . $acctFilter . " AND gl_type = 'INCOME'"; // comparison always has date filters
                         $prevIncParams = array_merge(
                             [':prev_df' => $prevFrom, ':prev_dt' => $prevTo],
@@ -1298,7 +1298,7 @@ switch ($method) {
                     account_number, account_type, customer_name, branch,
                     gross_amount, fee_amount, fee_pct, fee_mode, operator, description, created_at,
                     gl_category, total_debit, total_credit, net_amount, period_start, period_end,
-                    DATE(created_at) AS txn_date
+                    created_at::DATE AS txn_date
                   FROM profit_ledger";
                 $liSelect = "SELECT
                     ('LI-' || lft.id::TEXT) AS id,
@@ -1415,7 +1415,7 @@ switch ($method) {
                     $dateExpr = "TO_CHAR(DATE_TRUNC('week', created_at), 'YYYY-MM-DD')";
                     $expDateExpr = "TO_CHAR(DATE_TRUNC('week', date), 'YYYY-MM-DD')";
                 } else {
-                    $dateExpr = "DATE(created_at)";
+                    $dateExpr = "created_at::DATE";
                     $expDateExpr = "date";
                 }
 
@@ -1622,7 +1622,7 @@ switch ($method) {
 
                     // Current period income by category
                     // ★ FIX (FR-NP-001): Add gl_type='INCOME' filter to match Dashboard.
-                    $curIncWhere = ' WHERE DATE(created_at) >= :c_df AND DATE(created_at) <= :c_dt '
+                    $curIncWhere = ' WHERE created_at::DATE >= :c_df AND created_at::DATE <= :c_dt '
                         . ($bf['pl_branch'] ?? '') . $catFilter . " AND gl_type = 'INCOME'";
                     $curIncParams = array_merge(
                         [':c_df' => $dateFrom, ':c_dt' => $dateTo],
@@ -1666,7 +1666,7 @@ switch ($method) {
 
                     // Previous period income by category
                     // ★ FIX (FR-NP-001): Add gl_type='INCOME' filter to match Dashboard.
-                    $prevIncWhere = ' WHERE DATE(created_at) >= :p_df AND DATE(created_at) <= :p_dt '
+                    $prevIncWhere = ' WHERE created_at::DATE >= :p_df AND created_at::DATE <= :p_dt '
                         . ($bf['pl_branch'] ?? '') . $catFilter . " AND gl_type = 'INCOME'";
                     $prevIncParams = array_merge(
                         [':p_df' => $prevFrom, ':p_dt' => $prevTo],

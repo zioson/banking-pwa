@@ -108,6 +108,20 @@ try {
     error_log('[Transactions Init] profit_ledger table creation: ' . $e->getMessage());
 }
 
+// ── Ensure idempotency_keys table exists ──
+try {
+    $db->exec('CREATE TABLE IF NOT EXISTS idempotency_keys (
+        id            SERIAL PRIMARY KEY,
+        "key"         VARCHAR(255) NOT NULL,
+        operator_id   INTEGER NOT NULL,
+        response_json TEXT NOT NULL,
+        expires_at    TIMESTAMP NOT NULL,
+        UNIQUE ("key", operator_id)
+    )');
+} catch (PDOException $e) {
+    error_log('[Transactions Init] idempotency_keys table creation: ' . $e->getMessage());
+}
+
 /**
  * Resolve withdrawal fee % from settings.
  * CURRENT accounts can use tiered rules from `withdrawal.fee_tiers_current`:
@@ -1170,7 +1184,7 @@ switch ($method) {
                 } catch (PDOException $innerE) {
                     if ($db->inTransaction()) { $db->rollBack(); }
                     // Duplicate key on ref (error 23000 / MySQL 1062) — retry with new ref
-                    if (($innerE->errorInfo[1] ?? 0) === 1062 && $attempt < $maxRetries - 1) {
+                    if ((($innerE->errorInfo[0] ?? '') === '23505' || ($innerE->errorInfo[1] ?? 0) === 1062) && $attempt < $maxRetries - 1) {
                         error_log('[Transactions POST] Duplicate ref ' . $ref . ', retrying (attempt ' . ($attempt + 1) . ')');
                         continue;
                     }
