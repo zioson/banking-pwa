@@ -121,7 +121,12 @@ function requireAuth(): array
             sendAuthError('Session expired. Please log in again.', 401);
         }
 
-        $timeoutMinutes = 15;
+        // ★ FIX: Read session timeout from DB settings instead of hardcoding 15 minutes.
+        try {
+            $timeoutMinutes = (int)getSetting($db, 'security.session_timeout', 480);
+        } catch (Throwable $_) {
+            $timeoutMinutes = defined('SESSION_LIFETIME') ? (int)SESSION_LIFETIME : 480;
+        }
         try {
             // DB clocks can drift; enforce timeout using the authoritative expires_at
             // and avoid deleting fresh sessions due to stale DB NOW() values.
@@ -168,14 +173,15 @@ function requireAuth(): array
 
         // Sliding idle timeout: update last_activity + extend expiry on each authenticated request
         try {
-            $nextExpiry = date('Y-m-d H:i:s', time() + ($timeoutMinutes * 60));
+            $slideMinutes = $timeoutMinutes;
+            $nextExpiry = date('Y-m-d H:i:s', time() + ($slideMinutes * 60));
             $db->prepare('UPDATE sessions SET last_activity = :last_activity, expires_at = :expires_at WHERE id = :token')
                ->execute([
                    ':last_activity' => date('Y-m-d H:i:s'),
                    ':expires_at' => $nextExpiry,
                    ':token' => $token
                ]);
-            $cookieExpire = time() + ($timeoutMinutes * 60);
+            $cookieExpire = time() + ($slideMinutes * 60);
             setcookie('X-Atlas-Session', $token, [
                 'expires'  => $cookieExpire,
                 'path'     => '/',
@@ -488,7 +494,12 @@ function getAuthUser(): ?array
 
         // Non-critical: if sliding update fails, keep current session valid.
         try {
-            $timeoutMinutes = 15;
+            // ★ FIX: Read session timeout from DB settings instead of hardcoding 15 minutes.
+            try {
+                $timeoutMinutes = (int)getSetting($db, 'security.session_timeout', 480);
+            } catch (Throwable $_) {
+                $timeoutMinutes = defined('SESSION_LIFETIME') ? (int)SESSION_LIFETIME : 480;
+            }
             $nextExpiry = date('Y-m-d H:i:s', time() + ($timeoutMinutes * 60));
             $db->prepare('UPDATE sessions SET last_activity = :last_activity, expires_at = :expires_at WHERE id = :token')
                ->execute([
