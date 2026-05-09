@@ -99,15 +99,15 @@ try {
     // 3b. Test the actual staff login query
     if (isset($db)) {
         try {
-            $loginStmt = $db->prepare('SELECT id, username, email, password, role, employment_status FROM staff WHERE (username = :login1 OR email = :login2) AND employment_status = :status LIMIT 1');
+            $loginStmt = $db->prepare('SELECT id, username, email, password_hash, role, employment_status FROM staff WHERE (username = :login1 OR email = :login2) AND employment_status = :status LIMIT 1');
             $loginStmt->execute([':login1' => 'admin', ':login2' => 'admin', ':status' => 'ACTIVE']);
             $staffRow = $loginStmt->fetch(PDO::FETCH_ASSOC);
             if ($staffRow) {
                 $result['login_query_test'] = 'FOUND staff member';
                 $result['login_staff_id'] = $staffRow['id'];
                 $result['login_staff_role'] = $staffRow['role'];
-                $result['login_has_password'] = !empty($staffRow['password']);
-                $result['login_password_starts'] = substr($staffRow['password'], 0, 10) . '...';
+                $result['login_has_password_hash'] = !empty($staffRow['password_hash']);
+                $result['login_password_hash_starts'] = substr($staffRow['password_hash'], 0, 10) . '...';
             } else {
                 $result['login_query_test'] = 'NO staff found with username=admin, status=ACTIVE';
                 
