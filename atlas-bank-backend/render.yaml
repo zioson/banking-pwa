@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: atlas-bank-backend-pg
+    runtime: php
+    buildCommand: |
+      echo "Build complete"
+    startCommand: bash start.sh
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASS
+        sync: false
+      - key: DB_SCHEMA
+        value: atlas_bank_schema
+      - key: DB_SSLMODE
+        value: require
+      - key: SESSION_LIFETIME
+        value: "480"
+      - key: SESSION_NAME
+        value: ATLAS_BANK_SESSION

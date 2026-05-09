@@ -1,0 +1,20 @@
+{
+    "require": {
+        "php": ">=8.0",
+        "ext-pdo": "*",
+        "ext-pdo_pgsql": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "ext-openssl": "*"
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "echo 'Atlas Bank Backend - PostgreSQL Edition'"
+        ]
+    },
+    "config": {
+        "platform": {
+            "php": "8.2"
+        }
+    }
+}
