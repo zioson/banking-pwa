@@ -49,7 +49,7 @@ RewriteBase /atlas-bank-backend/
     CGIPassAuth On
 </IfModule>
 SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
-RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization},L]
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
 # -----------------------------------------------------------
 # Route all /api/* requests through router.php
