@@ -1596,6 +1596,46 @@ function destroyAllStaffSessions(int $staffId): bool
 }
 
 // -----------------------------------------------------------
+// MFA Pending Tokens
+// -----------------------------------------------------------
+
+/**
+ * Self-heal: ensure the mfa_pending_tokens table exists.
+ * This table is required by the MFA login flow in api/auth.php.
+ * Called once per request that uses MFA.
+ *
+ * @param PDO $db Database connection
+ */
+function _ensureMfaPendingTokensTable(PDO $db): void
+{
+    static $ensured = false;
+    if ($ensured) return;
+
+    try {
+        $exists = $db->query(
+            "SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = 'mfa_pending_tokens'"
+        )->fetchColumn();
+
+        if (!$exists) {
+            $db->exec("CREATE TABLE IF NOT EXISTS mfa_pending_tokens (
+                id SERIAL PRIMARY KEY,
+                staff_id INTEGER NOT NULL,
+                token VARCHAR(128) NOT NULL,
+                ip_address VARCHAR(50) DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                expires_at TIMESTAMP NULL,
+                UNIQUE (staff_id)
+            )");
+        }
+        $ensured = true;
+    } catch (PDOException $e) {
+        if (defined('APP_DEBUG') && APP_DEBUG) {
+            error_log('[MFA] Failed to create mfa_pending_tokens table: ' . $e->getMessage());
+        }
+    }
+}
+
+// -----------------------------------------------------------
 // Login History
 // -----------------------------------------------------------
 
