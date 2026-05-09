@@ -983,7 +983,7 @@ function postToGL(
                 ':desc' => $desc,
                 ':td' => $amount,
                 ':tc' => $amount,
-                ':balanced' => true,
+                ':balanced' => 1,
                 ':by' => $staffId
             ]);
 
@@ -1914,4 +1914,23 @@ function getSetting(PDO $db, string $key, $fallback = null) {
         // Table might not exist yet — return fallback
     }
     return $fallback;
+}
+
+
+// -----------------------------------------------------------
+// PostgreSQL Helper: lastInsertId wrapper
+// -----------------------------------------------------------
+
+/**
+ * Get the last inserted ID for a PostgreSQL SERIAL column.
+ * PostgreSQL PDO requires the sequence name for lastInsertId().
+ * Convention: {table_name}_id_seq for SERIAL PRIMARY KEY columns.
+ *
+ * @param PDO    $db       Database connection
+ * @param string $table    Table name (e.g., 'customers', 'accounts')
+ * @return int   The last inserted ID
+ */
+function lastId(PDO $db, string $table): int {
+    $seqName = $table . '_id_seq';
+    return (int)$db->lastInsertId($seqName);
 }
