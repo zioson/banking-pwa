@@ -68,7 +68,7 @@ class Auth
     {
         // 1. Look up the staff member
         $user = $this->db->fetch(
-            'SELECT id, username, password_hash, role, full_name, email, branch_id,
+            'SELECT id, username, password_hash, role, full_name, email,
                     employment_status, account_locked, mfa_required, failed_login_attempts, locked_until
              FROM staff
              WHERE username = :username',
@@ -149,7 +149,6 @@ class Auth
                 'full_name' => $user['full_name'],
                 'email'     => $user['email'],
                 'role'      => $user['role'],
-                'branch_id' => $user['branch_id'],
             ],
             'message' => 'Login successful.',
         ];
@@ -196,7 +195,7 @@ class Auth
         // Verify the session is still active in the database
         // ★ FIX (FIN-2b-003/015): Column names corrected to match actual DB schema
         $session = $this->db->fetch(
-            'SELECT s.*, st.username, st.role, st.full_name, st.email, st.branch_id, st.employment_status
+            'SELECT s.*, st.username, st.role, st.full_name, st.email, st.employment_status
              FROM sessions s
              JOIN staff st ON s.staff_id = st.id
              WHERE s.id = :jti AND s.expires_at > NOW()',
@@ -220,7 +219,6 @@ class Auth
                 'full_name'     => $session['full_name'],
                 'email'         => $session['email'],
                 'role'          => $session['role'],
-                'branch_id'     => $session['branch_id'],
                 'session_id'    => $payload['jti'],
                 'issued_at'     => $payload['iat'],
                 'expires_at'    => $payload['exp'],
@@ -301,7 +299,7 @@ class Auth
         // Previously any 6-digit code was accepted (development bypass left in production).
         // Now requires a valid TOTP secret to be stored on the user record.
         $user = $this->db->fetch(
-            'SELECT id, mfa_secret, role, full_name, email, branch_id
+            'SELECT id, mfa_secret, role, full_name, email
              FROM staff WHERE id = :id AND employment_status = :status',
             // ★ FIX (FIN-2b-003/015): Column name corrected to match actual DB schema
             ['id' => $userId, 'status' => 'ACTIVE']
@@ -329,7 +327,6 @@ class Auth
                         'full_name' => $user['full_name'],
                         'email'     => $user['email'],
                         'role'      => $user['role'],
-                        'branch_id' => $user['branch_id'],
                     ],
                     'message' => 'MFA verification successful (dev bypass).',
                 ];
@@ -361,7 +358,6 @@ class Auth
                 'full_name' => $user['full_name'],
                 'email'     => $user['email'],
                 'role'      => $user['role'],
-                'branch_id' => $user['branch_id'],
             ],
             'message' => 'MFA verification successful.',
         ];
@@ -476,7 +472,7 @@ class Auth
     {
         // Verify the admin user has Manager or Auditor role
         $admin = $this->db->fetch(
-            'SELECT role, branch_id FROM staff WHERE id = :id AND employment_status = :status',
+            'SELECT role FROM staff WHERE id = :id AND employment_status = :status',
             ['id' => $adminUserId, 'status' => 'ACTIVE']
         );
 

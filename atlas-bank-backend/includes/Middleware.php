@@ -140,7 +140,9 @@ class Middleware
             $userData = $authResult['user'];
         }
 
-        $userBranch = $userData['branch_id'];
+        // ★ PG-MIGRATION FIX: staff table doesn't have branch_id column.
+        // Branch assignments are in staff_branches table (many-to-many).
+        $userBranch = $userData['branch_id'] ?? null;
         $allowedBranches = is_array($branch) ? $branch : [$branch];
 
         // Admin can access any branch

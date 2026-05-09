@@ -1862,24 +1862,13 @@ function getSetting(PDO $db, string $key, $fallback = null) {
         // ★ FIXED: Case-insensitive lookup. Settings keys may be stored with mixed case
         // (e.g. withdrawal.fee_SALARY vs withdrawal.fee_salary). BINARY collation would
         // cause exact match to miss. Use LOWER() comparison for reliable lookup.
-        // ★ PG-MIGRATION: Handle both 'value' and 'value_data' column names
-        // The PostgreSQL migration created the column as 'value_data', but code expects 'value'.
-        // Try 'value' first; if it fails (column doesn't exist), fall back to 'value_data'.
-        try {
-            $stmt = $db->prepare('SELECT "value" FROM settings WHERE LOWER("key") = LOWER(:key) LIMIT 1');
-            $stmt->execute([':key' => $key]);
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($row !== false) {
-                return $row['value'];
-            }
-        } catch (PDOException $e2) {
-            // 'value' column doesn't exist — try 'value_data'
-            $stmt = $db->prepare('SELECT value_data AS "value" FROM settings WHERE LOWER("key") = LOWER(:key) LIMIT 1');
-            $stmt->execute([':key' => $key]);
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($row !== false) {
-                return $row['value'];
-            }
+        // ★ PG-MIGRATION FIX: Use value_data directly (the actual column name in PG schema).
+        // Previous try/fallback approach threw a PDOException on every call (wasteful + noisy logs).
+        $stmt = $db->prepare('SELECT value_data AS "value" FROM settings WHERE LOWER("key") = LOWER(:key) LIMIT 1');
+        $stmt->execute([':key' => $key]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row !== false) {
+            return $row['value'];
         }
     } catch (PDOException $e) {
         // Table might not exist yet — return fallback
