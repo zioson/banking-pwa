@@ -1249,7 +1249,10 @@ function createSession(int $staffId, string $ipAddress = '', string $userAgent =
         }
     }
 
-    $lifetime = 15;
+    // ★ FIX: Use the DB/configured lifetime instead of hardcoded 15 minutes.
+    // The $lifetime variable was already correctly read from DB settings above,
+    // but was being overwritten with 15, causing sessions to expire in 15 minutes
+    // regardless of the security.session_timeout setting (default 480 minutes).
     $expiresAt = date('Y-m-d H:i:s', time() + ($lifetime * 60));
 
     if (empty($ipAddress)) {
