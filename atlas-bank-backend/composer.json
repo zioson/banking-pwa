@@ -10,11 +10,16 @@
     "scripts": {
         "post-install-cmd": [
             "echo 'Atlas Bank Backend - PostgreSQL Edition'"
-        ]
+        ],
+        "test": "phpunit ../tests"
     },
     "config": {
         "platform": {
             "php": "8.2"
         }
+    },
+    "license": "proprietary",
+    "require-dev": {
+        "phpunit/phpunit": "^10.0"
     }
 }

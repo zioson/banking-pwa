@@ -1,18 +1,21 @@
+# Local development template only. Copy to a real .env outside version control and fill secrets there.
 APP_ENV=development
-APP_DEBUG=true
+APP_DEBUG=false
 
 DB_HOST=localhost
-DB_PORT=3306
+DB_PORT=5432
 DB_NAME=atlas_bank
-DB_USER=root
+DB_USER=postgres
 DB_PASS=
-DB_CHARSET=utf8mb4
+DB_SCHEMA=atlas_bank_schema
+DB_SSLMODE=prefer
 
 SESSION_LIFETIME=480
 SESSION_NAME=ATLAS_BANK_SESSION
 
-JWT_SECRET=atlas_bank_enterprise_local_jwt_secret_change_in_production_2026
+JWT_SECRET=change_me_local_only
 JWT_ISSUER=atlas-bank-api
-MFA_BYPASS_CODE=000000
+MFA_BYPASS_CODE=
+DATA_ENCRYPTION_KEY=atlas_bank_local_development_key_change_me
 
-CORS_ALLOWED_ORIGINS=http://localhost,http://127.0.0.1,http://localhost:80,http://localhost:8080
+CORS_ALLOWED_ORIGINS=http://localhost,http://127.0.0.1,http://localhost:8000,http://127.0.0.1:8000

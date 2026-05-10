@@ -1,9 +1,14 @@
 services:
   - type: web
-    name: atlas-bank-backend-pg
+    name: atlas-bank-backend
     runtime: php
-    # Render's PHP runtime uses Apache by default.
-    # No custom startCommand needed — Apache serves from the project root.
+    buildCommand: |
+      # No build step needed for PHP — Apache serves files directly.
+      # Ensure storage directory exists for rate-limit file fallback.
+      mkdir -p storage/rate_limits
+      chmod 750 storage/rate_limits
+    startCommand: echo "Atlas Bank Backend ready"
+    plan: free
     # The .htaccess file handles URL rewriting for /api/* routes.
     # The frontend HTML file is served from the project root as well.
     envVars:
@@ -29,3 +34,9 @@ services:
         value: "480"
       - key: SESSION_NAME
         value: ATLAS_BANK_SESSION
+      - key: JWT_SECRET
+        sync: false
+      - key: DATA_ENCRYPTION_KEY
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
