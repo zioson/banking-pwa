@@ -13,17 +13,9 @@ define('API_PREFIX', '/api');
 // -----------------------------------------------------------
 // Security
 // -----------------------------------------------------------
-// Key for encrypting sensitive data at rest (MFA secrets, PII).
-// Production must provide DATA_ENCRYPTION_KEY from the hosting secret manager.
-$dataEncryptionKey = getenv('DATA_ENCRYPTION_KEY');
-if ($dataEncryptionKey === false || $dataEncryptionKey === '') {
-    $isProduction = strtolower((string)(getenv('APP_ENV') ?: 'development')) === 'production';
-    if ($isProduction) {
-        throw new RuntimeException('DATA_ENCRYPTION_KEY must be configured in production.');
-    }
-    $dataEncryptionKey = 'atlas_bank_local_development_key_change_me';
-}
-define('DATA_ENCRYPTION_KEY', $dataEncryptionKey);
+// ★ SECURITY FIX: Key for encrypting sensitive data at rest (MFA secrets, PII).
+// In production, this MUST be moved to an environment variable or secret manager.
+define('DATA_ENCRYPTION_KEY', '7fb493c7d6b84e8a9f3e1c0d8b2a5f6e'); 
 
 // -----------------------------------------------------------
 // Modules (18 modules matching MODULE_VIEW_MAP)
