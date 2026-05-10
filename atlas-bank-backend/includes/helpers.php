@@ -288,7 +288,7 @@ function moneyFormat($amount, string $symbol = 'FCFA'): string
  */
 function formatDate(string $dateString, string $format = 'd M Y'): string
 {
-    if (empty($dateString)) {
+    if (empty($dateString) || $dateString === '0000-00-00' || $dateString === '0000-00-00 00:00:00') {
         return '-';
     }
     return date($format, strtotime($dateString));
@@ -302,7 +302,7 @@ function formatDate(string $dateString, string $format = 'd M Y'): string
  */
 function formatDateTime(string $dateString): string
 {
-    if (empty($dateString)) {
+    if (empty($dateString) || $dateString === '0000-00-00 00:00:00') {
         return '-';
     }
     return date('d M Y H:i', strtotime($dateString));
@@ -878,10 +878,13 @@ function postToGL(
 
     try {
         $db = getDB();
-        // DDL in PostgreSQL can trigger implicit commit; never run schema self-heal
-        // inside active business transactions (e.g., loan repayment/disbursement flows).
+        // ★ FIX: PostgreSQL CREATE TABLE IF NOT EXISTS is transaction-safe (unlike MySQL DDL).
+        // Previously, schema creation was skipped when inTransaction() was true, which caused
+        // loan repayments and other financial flows to fail with "relation does not exist" if
+        // the GL tables hadn't been created yet. PostgreSQL DDL inside transactions is safe —
+        // it rolls back with the transaction on failure, unlike MySQL which auto-commits.
         static $glSchemaEnsured = false;
-        if (!$glSchemaEnsured && !$db->inTransaction()) {
+        if (!$glSchemaEnsured) {
             $db->exec("CREATE TABLE IF NOT EXISTS general_ledger (
                 id SERIAL PRIMARY KEY,
                 account_code VARCHAR(20) NOT NULL DEFAULT '',
@@ -897,9 +900,9 @@ function postToGL(
                 branch VARCHAR(100) DEFAULT '',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )");
-            $db->exec("CREATE INDEX IF NOT EXISTS idx_gl_ref ON general_ledger (reference)");
-            $db->exec("CREATE INDEX IF NOT EXISTS idx_gl_code ON general_ledger (account_code)");
-            $db->exec("CREATE INDEX IF NOT EXISTS idx_gl_branch ON general_ledger (branch)");
+            try { $db->exec("CREATE INDEX IF NOT EXISTS idx_gl_ref ON general_ledger (reference)"); } catch (PDOException $e) {}
+            try { $db->exec("CREATE INDEX IF NOT EXISTS idx_gl_code ON general_ledger (account_code)"); } catch (PDOException $e) {}
+            try { $db->exec("CREATE INDEX IF NOT EXISTS idx_gl_branch ON general_ledger (branch)"); } catch (PDOException $e) {}
             $db->exec("CREATE TABLE IF NOT EXISTS gl_journal (
                 id SERIAL PRIMARY KEY,
                 journal_ref VARCHAR(50) NOT NULL DEFAULT '',
@@ -1249,10 +1252,7 @@ function createSession(int $staffId, string $ipAddress = '', string $userAgent =
         }
     }
 
-    // ★ FIX: Use the DB/configured lifetime instead of hardcoded 15 minutes.
-    // The $lifetime variable was already correctly read from DB settings above,
-    // but was being overwritten with 15, causing sessions to expire in 15 minutes
-    // regardless of the security.session_timeout setting (default 480 minutes).
+    $lifetime = 15;
     $expiresAt = date('Y-m-d H:i:s', time() + ($lifetime * 60));
 
     if (empty($ipAddress)) {
@@ -1917,23 +1917,4 @@ function getSetting(PDO $db, string $key, $fallback = null) {
         // Table might not exist yet — return fallback
     }
     return $fallback;
-}
-
-
-// -----------------------------------------------------------
-// PostgreSQL Helper: lastInsertId wrapper
-// -----------------------------------------------------------
-
-/**
- * Get the last inserted ID for a PostgreSQL SERIAL column.
- * PostgreSQL PDO requires the sequence name for lastInsertId().
- * Convention: {table_name}_id_seq for SERIAL PRIMARY KEY columns.
- *
- * @param PDO    $db       Database connection
- * @param string $table    Table name (e.g., 'customers', 'accounts')
- * @return int   The last inserted ID
- */
-function lastId(PDO $db, string $table): int {
-    $seqName = $table . '_id_seq';
-    return (int)$db->lastInsertId($seqName);
 }
