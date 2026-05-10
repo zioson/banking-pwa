@@ -52,7 +52,7 @@ switch ($method) {
                 ':amount' => (float)$input['amount'],
                 ':exempt' => isset($input['is_exempt']) ? (int)$input['is_exempt'] : 0
             ]);
-            $newId = (int)$db->lastInsertId('deductions_id_seq');
+            $newId = (int)$db->lastInsertId();
             logAudit($staff['full_name'], 'DEDUCTION_CREATE', 'DEDUCTION', (string)$newId, 'SUCCESS',
                 'Added deduction "' . $input['deduction_name'] . '" amount=' . $input['amount'] . ' on txn ' . $input['transaction_id'],
                 $staff['department'], getClientIp());

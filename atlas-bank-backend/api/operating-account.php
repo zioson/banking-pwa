@@ -74,10 +74,10 @@ define('OA_CONTRA_DEBIT_NAME', 'Miscellaneous Expense');
  * DDL operations — do NOT call inside a transaction.
  */
 function opAddCol(PDO $db, string $table, string $col, string $def): void {
-    $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_name = ? AND column_name = ?");
+    $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ? AND column_name = ?");
         $r->execute([$table, $col]);
-    if (!$r) {
-        $db->exec("ALTER TABLE $table ADD COLUMN $col $def");
+    if (!$r->fetch()) {
+        $db->exec("ALTER TABLE \"$table\" ADD COLUMN \"$col\" $def");
     }
 }
 
@@ -124,7 +124,7 @@ function opEnsureTransactionsTable(PDO $db): void {
     // if no fund transfer has been done yet (general-ledger.php adds it on FUND_TRANSFER).
     opAddCol($db, 'operating_account_transactions', 'branch', "VARCHAR(100) DEFAULT ''");
     // Safe migration: add branch index for filtered queries
-    $brIdx = $db->query("SELECT indexname FROM pg_indexes WHERE tablename = 'operating_account_transactions' WHERE indexname = 'idx_oat_branch'")->fetch();
+    $brIdx = $db->query("SELECT indexname FROM pg_indexes WHERE tablename = 'operating_account_transactions' AND indexname = 'idx_oat_branch'")->fetch();
     if (!$brIdx) {
         $db->exec("CREATE INDEX IF NOT EXISTS idx_oat_branch ON operating_account_transactions (branch)");
     }
@@ -147,11 +147,11 @@ function opEnsureTransactionsTable(PDO $db): void {
     }
 
     // Legacy: if old schema used "timestamp" as column name, rename to "created_at"
-    $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'operating_account_transactions' AND column_name = 'timestamp'")->fetch();
+    $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'operating_account_transactions' AND column_name = 'timestamp'")->fetch();
     if ($col) {
-        $col2 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'operating_account_transactions' AND column_name = 'created_at'")->fetch();
+        $col2 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'operating_account_transactions' AND column_name = 'created_at'")->fetch();
         if (!$col2) {
-            $db->exec('ALTER TABLE operating_account_transactions RENAME COLUMN "timestamp" TO "created_at"');
+            $db->exec('ALTER TABLE "operating_account_transactions" RENAME COLUMN "timestamp" TO "created_at"');
         }
     }
 }
@@ -180,9 +180,9 @@ function opEnsureGeneralLedgerTable(PDO $db): void {
     $db->exec("CREATE INDEX IF NOT EXISTS idx_transaction_type ON general_ledger (transaction_type)");
 
     // Safe migration: add transaction_type column + index
-    $glCol = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'transaction_type'")->fetch();
+    $glCol = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'general_ledger' AND column_name = 'transaction_type'")->fetch();
     if (!$glCol) {
-        $db->exec("ALTER TABLE general_ledger ADD COLUMN transaction_type VARCHAR(50) DEFAULT ''");
+        $db->exec("ALTER TABLE \"general_ledger\" ADD COLUMN \"transaction_type\" VARCHAR(50) DEFAULT ''");
         $db->exec("CREATE INDEX IF NOT EXISTS idx_transaction_type ON general_ledger (transaction_type)");
     }
     // Safe migration: add contra_account column
@@ -190,7 +190,7 @@ function opEnsureGeneralLedgerTable(PDO $db): void {
     // Safe migration: add branch column for branch isolation
     opAddCol($db, 'general_ledger', 'branch', "VARCHAR(100) DEFAULT ''");
     // Safe migration: add branch index for filtered GL queries
-    $brIdx = $db->query("SELECT indexname FROM pg_indexes WHERE tablename = 'general_ledger' WHERE indexname = 'idx_branch'")->fetch();
+    $brIdx = $db->query("SELECT indexname FROM pg_indexes WHERE tablename = 'general_ledger' AND indexname = 'idx_branch'")->fetch();
     if (!$brIdx) {
         $db->exec("CREATE INDEX IF NOT EXISTS idx_branch ON general_ledger (branch)");
     }
@@ -702,7 +702,7 @@ switch ($method) {
 
             // ── Success response ─────────────────────────────────────────
             successResponse([
-                'id'              => (int)$db->lastInsertId('operating_account_transactions_id_seq'),
+                'id'              => (int)$db->lastInsertId(),
                 'ref'             => $ref,
                 'type'            => $type,
                 'amount'          => $amount,

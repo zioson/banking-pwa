@@ -358,11 +358,11 @@ switch ($method) {
                 ':rel'    => date('Y-m-d'),
                 ':phone'  => sanitize($input['phone'] ?? ''),
                 ':email'  => sanitize($input['email'] ?? ''),
-                ':kyc'    => 0,  // PG BOOLEAN: use 0/1 instead of PHP true/false
+                ':kyc'    => FALSE,
                 ':next_action' => sanitize($input['next_action'] ?? ''),
                 ':notes'  => sanitize($input['notes'] ?? ''),
             ]);
-            $newId = (int)$db->lastInsertId('customers_id_seq');
+            $newId = (int)$db->lastInsertId();
 
             // ── Save requested products ──
             $rawProducts = is_array($input['products'] ?? null) ? $input['products'] : [];
@@ -399,10 +399,10 @@ switch ($method) {
             // kyc_verified is BOOLEAN — handle separately to ensure TRUE/FALSE value
             if (isset($input['kyc_verified'])) {
                 $fields[] = "\"kyc_verified\" = :kyc_verified";
-                $params[":kyc_verified"] = $input['kyc_verified'] ? 1 : 0;  // PG BOOLEAN: use 0/1
+                $params[":kyc_verified"] = (int)$input['kyc_verified'] ? TRUE : FALSE;
             }
             if (empty($fields)) { errorResponse('No fields to update.'); }
-            $stmt = $db->prepare("UPDATE customers SET " . implode(', ', $fields) . " WHERE id = :id");
+            $stmt = $db->prepare("UPDATE customers SET ' . implode(', ', $fields) . ' WHERE id = :id");
             $stmt->execute($params);
             // Update products if provided
             if (isset($input['products'])) {

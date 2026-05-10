@@ -145,7 +145,7 @@ switch ($method) {
                 ':opname'  => $staff['full_name']
             ]);
 
-            $newId = (int)$db->lastInsertId('expenses_id_seq');
+            $newId = (int)$db->lastInsertId();
             logAudit(
                 $staff['full_name'], 'EXPENSE_CREATE', 'EXPENSE',
                 (string)$newId, 'SUCCESS',
@@ -240,21 +240,21 @@ switch ($method) {
             $db->exec("CREATE INDEX IF NOT EXISTS idx_branch ON general_ledger (branch)");
 
             // Safe migration: add branch column if missing from general_ledger
-            $glCols = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'branch'")->fetchAll();
+            $glCols = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'general_ledger' AND column_name = 'branch'")->fetchAll();
             if (empty($glCols)) {
                 $db->exec("ALTER TABLE general_ledger ADD COLUMN branch VARCHAR(100) DEFAULT ''");
                 $db->exec("CREATE INDEX IF NOT EXISTS idx_branch ON general_ledger (branch)");
             }
 
             // Safe migration: add transaction_type column if missing from general_ledger
-            $ttCols = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'transaction_type'")->fetchAll();
+            $ttCols = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'general_ledger' AND column_name = 'transaction_type'")->fetchAll();
             if (empty($ttCols)) {
                 $db->exec("ALTER TABLE general_ledger ADD COLUMN transaction_type VARCHAR(50) DEFAULT ''");
                 $db->exec("CREATE INDEX IF NOT EXISTS idx_transaction_type ON general_ledger (transaction_type)");
             }
 
             // Safe migration: add contra_account column if missing from general_ledger
-            $caCols = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'contra_account'")->fetchAll();
+            $caCols = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'general_ledger' AND column_name = 'contra_account'")->fetchAll();
             if (empty($caCols)) {
                 $db->exec("ALTER TABLE general_ledger ADD COLUMN contra_account VARCHAR(50) DEFAULT ''");
             }

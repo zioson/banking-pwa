@@ -38,9 +38,9 @@ function laCanAccessBranch(array $staff, string $branch): bool {
  */
 function laAddCol(PDO $db, string $table, string $col, string $def): void {
     try {
-        $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_name = ? AND column_name = ?");
+        $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ? AND column_name = ?");
         $r->execute([$table, $col]);
-        if (!$r) $db->exec("ALTER TABLE $table ADD COLUMN $col $def");
+        if (!$r->fetch()) $db->exec("ALTER TABLE \"$table\" ADD COLUMN \"$col\" $def");
     } catch (PDOException $e) {
         error_log("[LoanApps Schema] laAddCol($table, $col) failed: " . $e->getMessage());
     }
@@ -121,9 +121,11 @@ function laEnsureSchema(PDO $db): void {
     // ★ CRITICAL: DISBURSED status prevents re-disbursement loop on page refresh.
     // Without it, already-disbursed applications reappear as APPROVED in the UI.
     try {
-        $col = $db->query("SELECT column_name, udt_name FROM information_schema.columns WHERE table_name = 'loan_applications' AND column_name = 'status'")->fetch();
-        if ($col && ($col['udt_name'] === 'loan_applications_status' || str_contains(strtolower($col['udt_name'] ?? ''), 'enum'))) {
-            $db->exec("ALTER TABLE loan_applications ALTER COLUMN status TYPE VARCHAR(30)");
+        $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'loan_applications' AND column_name = 'status'")->fetch();
+        if ($col && str_contains($col['Type'], 'VARCHAR(20)')) {
+            if (!str_contains($col['Type'], 'DISBURSED')) {
+                $db->exec("ALTER TABLE loan_applications ALTER COLUMN status TYPE VARCHAR(20)");
+            }
         }
     } catch (PDOException $e) {
         error_log("[LoanApps Schema] ALTER status failed: " . $e->getMessage());
@@ -141,7 +143,7 @@ function laEnsureSchema(PDO $db): void {
 function laEnsureApprovalsSchema(PDO $db): void {
     try {
         $db->exec("CREATE TABLE IF NOT EXISTS approvals (
-            id            INTEGER    NOT NULL,
+            id            SERIAL PRIMARY KEY,
             entity_type   VARCHAR(50)     NOT NULL,
             entity_id     INTEGER    DEFAULT NULL,
             scope_code    VARCHAR(50)     NOT NULL,
@@ -154,8 +156,7 @@ function laEnsureApprovalsSchema(PDO $db): void {
             decided_by    INTEGER    DEFAULT NULL,
             decided_at    TIMESTAMP       DEFAULT NULL,
             reason        TEXT            DEFAULT NULL,
-            created_at    TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (id)
+            created_at    TIMESTAMP       DEFAULT CURRENT_TIMESTAMP
         )");
         $db->exec("CREATE INDEX IF NOT EXISTS idx_approvals_entity ON approvals (entity_type, entity_id)");
         $db->exec("CREATE INDEX IF NOT EXISTS idx_approvals_status ON approvals (status)");
@@ -164,7 +165,7 @@ function laEnsureApprovalsSchema(PDO $db): void {
     }
 
     try {
-        $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'approvals' AND column_name = 'details'")->fetch();
+        $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'approvals' AND column_name = 'details'")->fetch();
         if (!$col) {
             $db->exec("ALTER TABLE approvals ADD COLUMN details TEXT DEFAULT NULL");
         }
@@ -566,7 +567,7 @@ switch ($method) {
                     ':guarantor_account_id' => $guarantorAccountId,
                     ':guarantor_account_number' => $guarantorAccountNumber,
                 ]);
-                $newId = (int)$db->lastInsertId('loan_applications_id_seq');
+                $newId = (int)$db->lastInsertId();
 
                 $defaultChecks = [
                     ['code' => 'KYC_CHECK', 'name' => 'KYC Verification'],

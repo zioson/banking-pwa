@@ -30,7 +30,7 @@ switch ($method) {
                 $custParams = [':q' => $like, ':limit' => $limit];
                 $custBranchFilter = applyBranchFilter($staffBranches, '', $custParams, $staff['role'] ?? '', 'branch');
                 $custWhere = $custBranchFilter ? ' AND (1=1' . $custBranchFilter . ')' : '';
-                $stmt = $db->prepare("SELECT id, customer_number, full_name, status, customer_type, branch FROM customers WHERE (full_name LIKE :q OR customer_number LIKE :q){$custWhere} LIMIT CAST(:limit AS INTEGER)");
+                $stmt = $db->prepare("SELECT id, customer_number, full_name, status, customer_type, branch FROM customers WHERE (full_name LIKE :q OR customer_number LIKE :q){$custWhere} LIMIT CAST(:lim AS INTEGER)it");
                 $stmt->execute($custParams);
                 $results['customers'] = $stmt->fetchAll();
             }
@@ -40,7 +40,7 @@ switch ($method) {
                 $acctParams = [':q' => $like, ':limit' => $limit];
                 $acctBranchFilter = applyBranchFilter($staffBranches, '', $acctParams, $staff['role'] ?? '', 'branch');
                 $acctWhere = $acctBranchFilter ? ' AND (1=1' . $acctBranchFilter . ')' : '';
-                $stmt = $db->prepare("SELECT id, account_number, customer_name, product_type, status, currency, available_balance FROM accounts WHERE (account_number LIKE :q OR customer_name LIKE :q){$acctWhere} LIMIT CAST(:limit AS INTEGER)");
+                $stmt = $db->prepare("SELECT id, account_number, customer_name, product_type, status, currency, available_balance FROM accounts WHERE (account_number LIKE :q OR customer_name LIKE :q){$acctWhere} LIMIT CAST(:lim AS INTEGER)it");
                 $stmt->execute($acctParams);
                 $results['accounts'] = $stmt->fetchAll();
             }
@@ -50,7 +50,7 @@ switch ($method) {
                 $txnParams = [':q' => $like, ':limit' => $limit];
                 $txnBranchFilter = applyBranchFilter($staffBranches, '', $txnParams, $staff['role'] ?? '', 'branch');
                 $txnWhere = $txnBranchFilter ? ' AND (1=1' . $txnBranchFilter . ')' : '';
-                $stmt = $db->prepare("SELECT id, ref, type, status, direction, amount, customer_name, created_at FROM transactions WHERE (ref LIKE :q OR customer_name LIKE :q OR description LIKE :q){$txnWhere} LIMIT CAST(:limit AS INTEGER)");
+                $stmt = $db->prepare("SELECT id, ref, type, status, direction, amount, customer_name, created_at FROM transactions WHERE (ref LIKE :q OR customer_name LIKE :q OR description LIKE :q){$txnWhere} LIMIT CAST(:lim AS INTEGER)it");
                 $stmt->execute($txnParams);
                 $results['transactions'] = $stmt->fetchAll();
             }
@@ -60,7 +60,7 @@ switch ($method) {
                 $loanParams = [':q' => $like, ':limit' => $limit];
                 $loanBranchFilter = applyBranchFilter($staffBranches, '', $loanParams, $staff['role'] ?? '', 'branch');
                 $loanWhere = $loanBranchFilter ? ' AND (1=1' . $loanBranchFilter . ')' : '';
-                $stmt = $db->prepare("SELECT id, loan_number, customer_name, status, principal, outstanding FROM loans WHERE (loan_number LIKE :q OR customer_name LIKE :q){$loanWhere} LIMIT CAST(:limit AS INTEGER)");
+                $stmt = $db->prepare("SELECT id, loan_number, customer_name, status, principal, outstanding FROM loans WHERE (loan_number LIKE :q OR customer_name LIKE :q){$loanWhere} LIMIT CAST(:lim AS INTEGER)it");
                 $stmt->execute($loanParams);
                 $results['loans'] = $stmt->fetchAll();
             }

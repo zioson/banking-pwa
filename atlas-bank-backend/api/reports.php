@@ -129,12 +129,9 @@ function rptBindBranchFilter(PDO $db, PDOStatement $stmt, array $staff, string $
  */
 function reportSafeAddCol(PDO $db, string $table, string $col, string $def): void {
     try {
-        $schema = defined('DB_SCHEMA') ? DB_SCHEMA : 'atlas_bank_schema';
-        $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_schema = :schema AND table_name = :table AND column_name = :col");
-        $r->execute([':schema' => $schema, ':table' => $table, ':col' => $col]);
-        if (!$r->fetchColumn()) {
-            $db->exec("ALTER TABLE $table ADD COLUMN $col $def");
-        }
+        $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ? AND column_name = ?");
+        $r->execute([$table, $col]);
+        if (!$r->fetch()) $db->exec("ALTER TABLE \"$table\" ADD COLUMN \"$col\" $def");
     } catch (PDOException $e) {
         error_log('[Reports Schema] safeAddCol(' . $table . '.' . $col . ') failed: ' . $e->getMessage());
     }
@@ -145,12 +142,8 @@ function reportSafeAddCol(PDO $db, string $table, string $col, string $def): voi
  */
 function reportAddCol(PDO $db, string $col, string $def): void {
     try {
-        $schema = defined('DB_SCHEMA') ? DB_SCHEMA : 'atlas_bank_schema';
-        $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_schema = :schema AND table_name = 'profit_ledger' AND column_name = :col");
-        $r->execute([':schema' => $schema, ':col' => $col]);
-        if (!$r->fetchColumn()) {
-            $db->exec("ALTER TABLE profit_ledger ADD COLUMN $col $def");
-        }
+        $r = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'profit_ledger' AND column_name = '$col'");
+        if (!$r->fetch()) $db->exec("ALTER TABLE \"profit_ledger\" ADD COLUMN \"$col\" $def");
     } catch (PDOException $e) {
         error_log('[Reports Schema] reportAddCol(' . $col . ') failed: ' . $e->getMessage());
     }
@@ -246,9 +239,8 @@ function ensureTransactionsSchema(PDO $db): void {
 
 function reportHasTable(PDO $db, string $table): bool {
     try {
-        $schema = defined('DB_SCHEMA') ? DB_SCHEMA : 'atlas_bank_schema';
-        $stmt = $db->prepare("SELECT table_name FROM information_schema.tables WHERE table_schema = :schema AND table_name = :table");
-        $stmt->execute([':schema' => $schema, ':table' => $table]);
+        $stmt = $db->prepare("SELECT table_name FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = ?");
+        $stmt->execute([$table]);
         return (bool)$stmt->fetchColumn();
     } catch (PDOException $e) {
         return false;
@@ -293,13 +285,12 @@ function ensureLoanFundTxSchema(PDO $db): void {
             reportSafeAddCol($db, 'loan_fund_transactions', 'ref', "VARCHAR(50) DEFAULT ''");
         }
         try {
-            // PostgreSQL: UPDATE with JOIN requires FROM clause instead of MySQL's JOIN syntax
             $db->exec("
-                UPDATE loan_fund_transactions lft
+                UPDATE loan_fund_transactions
                 SET branch = l.branch
                 FROM loans l
-                WHERE l.id = lft.loan_id
-                  AND (lft.branch IS NULL OR TRIM(lft.branch) = '')
+                WHERE loan_fund_transactions.loan_id = l.id
+                  AND (loan_fund_transactions.branch IS NULL OR TRIM(loan_fund_transactions.branch) = '')
                   AND l.branch IS NOT NULL AND TRIM(l.branch) <> ''
             ");
         } catch (PDOException $e) {}
@@ -320,13 +311,13 @@ function buildPLDateFilters(array $get): array {
     $dateTo = sanitize($get['date_to'] ?? '');
 
     if (!empty($dateFrom)) {
-        $plWhere .= ($plWhere ? ' AND ' : ' WHERE ') . 'created_at::DATE >= :pl_df';
+        $plWhere .= ($plWhere ? ' AND ' : ' WHERE ') . 'DATE(created_at) >= :pl_df';
         $plParams[':pl_df'] = $dateFrom;
         $expWhere .= ($expWhere ? ' AND ' : ' WHERE ') . 'date >= :exp_df';
         $expParams[':exp_df'] = $dateFrom;
     }
     if (!empty($dateTo)) {
-        $plWhere .= ($plWhere ? ' AND ' : ' WHERE ') . 'created_at::DATE <= :pl_dt';
+        $plWhere .= ($plWhere ? ' AND ' : ' WHERE ') . 'DATE(created_at) <= :pl_dt';
         $plParams[':pl_dt'] = $dateTo;
         $expWhere .= ($expWhere ? ' AND ' : ' WHERE ') . 'date <= :exp_dt';
         $expParams[':exp_dt'] = $dateTo;
@@ -1100,7 +1091,7 @@ switch ($method) {
 
                         // Previous period income (same filters except dates)
                         // ★ FIX (FR-NP-001): Add gl_type='INCOME' filter to match main summary.
-                        $prevIncWhere = ' WHERE created_at::DATE >= :prev_df AND created_at::DATE <= :prev_dt '
+                        $prevIncWhere = ' WHERE DATE(created_at) >= :prev_df AND DATE(created_at) <= :prev_dt '
                             . ($bf['pl_branch'] ?? '') . $catFilter . $acctFilter . " AND gl_type = 'INCOME'"; // comparison always has date filters
                         $prevIncParams = array_merge(
                             [':prev_df' => $prevFrom, ':prev_dt' => $prevTo],
@@ -1298,7 +1289,7 @@ switch ($method) {
                     account_number, account_type, customer_name, branch,
                     gross_amount, fee_amount, fee_pct, fee_mode, operator, description, created_at,
                     gl_category, total_debit, total_credit, net_amount, period_start, period_end,
-                    created_at::DATE AS txn_date
+                    DATE(created_at) AS txn_date
                   FROM profit_ledger";
                 $liSelect = "SELECT
                     ('LI-' || lft.id::TEXT) AS id,
@@ -1415,7 +1406,7 @@ switch ($method) {
                     $dateExpr = "TO_CHAR(DATE_TRUNC('week', created_at), 'YYYY-MM-DD')";
                     $expDateExpr = "TO_CHAR(DATE_TRUNC('week', date), 'YYYY-MM-DD')";
                 } else {
-                    $dateExpr = "created_at::DATE";
+                    $dateExpr = "DATE(created_at)";
                     $expDateExpr = "date";
                 }
 
@@ -1622,7 +1613,7 @@ switch ($method) {
 
                     // Current period income by category
                     // ★ FIX (FR-NP-001): Add gl_type='INCOME' filter to match Dashboard.
-                    $curIncWhere = ' WHERE created_at::DATE >= :c_df AND created_at::DATE <= :c_dt '
+                    $curIncWhere = ' WHERE DATE(created_at) >= :c_df AND DATE(created_at) <= :c_dt '
                         . ($bf['pl_branch'] ?? '') . $catFilter . " AND gl_type = 'INCOME'";
                     $curIncParams = array_merge(
                         [':c_df' => $dateFrom, ':c_dt' => $dateTo],
@@ -1666,7 +1657,7 @@ switch ($method) {
 
                     // Previous period income by category
                     // ★ FIX (FR-NP-001): Add gl_type='INCOME' filter to match Dashboard.
-                    $prevIncWhere = ' WHERE created_at::DATE >= :p_df AND created_at::DATE <= :p_dt '
+                    $prevIncWhere = ' WHERE DATE(created_at) >= :p_df AND DATE(created_at) <= :p_dt '
                         . ($bf['pl_branch'] ?? '') . $catFilter . " AND gl_type = 'INCOME'";
                     $prevIncParams = array_merge(
                         [':p_df' => $prevFrom, ':p_dt' => $prevTo],
@@ -1882,10 +1873,10 @@ switch ($method) {
                 try {
                     // Ensure fee column exists
                     try { $db->query("SELECT fee FROM transactions LIMIT 1"); } catch (PDOException $e) {
-                        $db->exec("ALTER TABLE transactions ADD COLUMN fee DECIMAL(20,2) DEFAULT 0");
+                        $db->exec("ALTER TABLE \"transactions\" ADD COLUMN \"fee\" DECIMAL(20,2) DEFAULT 0");
                     }
                     try { $db->query("SELECT fee_pct FROM transactions LIMIT 1"); } catch (PDOException $e) {
-                        $db->exec("ALTER TABLE transactions ADD COLUMN fee_pct DECIMAL(8,4) DEFAULT 0");
+                        $db->exec("ALTER TABLE \"transactions\" ADD COLUMN \"fee_pct\" DECIMAL(8,4) DEFAULT 0");
                     }
 
                     $stmt = $db->prepare("
@@ -1984,7 +1975,7 @@ switch ($method) {
                     'operator'        => [sanitize($input['operator'] ?? ''),        's'],
                     'description'     => [sanitize($input['description'] ?? ''),     's'],
                 ];
-                $existingCols = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'profit_ledger' ORDER BY ordinal_position")->fetchAll(PDO::FETCH_COLUMN, 0);
+                $existingCols = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'profit_ledger' ORDER BY ordinal_position")->fetchAll(PDO::FETCH_COLUMN, 0);
                 foreach ($colMap as $col => $val) {
                     if (in_array($col, $existingCols, true)) {
                         $insertCols[] = '"' . $col . '"';
@@ -1999,7 +1990,7 @@ switch ($method) {
                 $sql = 'INSERT INTO profit_ledger (' . implode(', ', $insertCols) . ') VALUES (' . implode(', ', array_keys($insertParams)) . ')';
                 $stmt = $db->prepare($sql);
                 $stmt->execute($insertParams);
-                $newId = (int)$db->lastInsertId('saved_reports_id_seq');
+                $newId = (int)$db->lastInsertId();
                 logAudit($staff['full_name'] ?? 'System', 'PROFIT_LEDGER_ENTRY', 'REPORTS', (string)$newId, 'SUCCESS',
                     'Recorded profit ledger entry for branch ' . ($input['branch'] ?? 'all'), $staff['department'] ?? '', getClientIp());
                 createdResponse(['id' => $newId], 'Profit ledger entry recorded.');
@@ -2028,15 +2019,15 @@ switch ($method) {
                     // Ensure fee column exists
                     try {
                         foreach (['fee' => 'DECIMAL(20,2) DEFAULT 0', 'fee_pct' => 'DECIMAL(8,4) DEFAULT 0'] as $col => $def) {
-                            $c = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'transactions' AND column_name = '$col'")->fetch();
-                            if (!$c) $db->exec("ALTER TABLE transactions ADD COLUMN $col $def");
+                            $c = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'transactions' AND column_name = '$col'")->fetch();
+                            if (!$c) $db->exec("ALTER TABLE \"transactions\" ADD COLUMN \"$col\" $def");
                         }
                     } catch (PDOException $colErr) {
                         error_log('[Backfill] Column migration warning: ' . $colErr->getMessage());
                     }
 
                     // Check if fee column actually exists now
-                    $feeColExists = (bool)$db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'transactions' AND column_name = 'fee'")->fetch();
+                    $feeColExists = (bool)$db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'transactions' AND column_name = 'fee'")->fetch();
 
                     if ($feeColExists) {
                         // Full backfill: match both FEE-type transactions AND withdrawals with fee > 0
