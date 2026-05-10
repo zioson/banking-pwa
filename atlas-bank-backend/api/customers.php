@@ -19,6 +19,54 @@ if ($method !== 'GET') {
 }
 $db = getDB();
 
+// ── Auto-create customers table if missing (same pattern as accounts.php) ──
+// ★ FIX: The INSERT references a `notes` column that doesn't exist in older schemas.
+// This CREATE TABLE guard ensures the table always has all required columns.
+$db->exec("CREATE TABLE IF NOT EXISTS customers (
+    id              SERIAL PRIMARY KEY,
+    customer_number VARCHAR(30) NOT NULL UNIQUE,
+    customer_type   VARCHAR(30) NOT NULL DEFAULT 'INDIVIDUAL',
+    full_name       VARCHAR(200) NOT NULL,
+    status          VARCHAR(30) DEFAULT 'DRAFT',
+    risk_rating     VARCHAR(30) DEFAULT 'MEDIUM',
+    branch          VARCHAR(200) DEFAULT '',
+    relationship_started DATE DEFAULT NULL,
+    next_action     TEXT DEFAULT NULL,
+    notes           TEXT DEFAULT NULL,
+    phone           VARCHAR(50) DEFAULT '',
+    email           VARCHAR(200) DEFAULT '',
+    address         TEXT DEFAULT NULL,
+    id_type         VARCHAR(50) DEFAULT NULL,
+    id_number       VARCHAR(100) DEFAULT NULL,
+    kyc_document    TEXT DEFAULT NULL,
+    kyc_verified    BOOLEAN DEFAULT FALSE,
+    kyc_status      VARCHAR(30) DEFAULT 'NOT_STARTED',
+    kyc_submitted_at TIMESTAMP DEFAULT NULL,
+    occupation      VARCHAR(100) DEFAULT NULL,
+    employer        VARCHAR(200) DEFAULT NULL,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
+// ★ FIX: Add missing columns that the code references but older DB schemas lack
+try { $db->exec("ALTER TABLE customers ADD COLUMN notes TEXT DEFAULT NULL"); } catch (PDOException $e) { /* already exists */ }
+try { $db->exec("ALTER TABLE customers ADD COLUMN kyc_status VARCHAR(30) DEFAULT 'NOT_STARTED'"); } catch (PDOException $e) { /* already exists */ }
+try { $db->exec("ALTER TABLE customers ADD COLUMN kyc_submitted_at TIMESTAMP DEFAULT NULL"); } catch (PDOException $e) { /* already exists */ }
+try { $db->exec("ALTER TABLE customers ADD COLUMN address TEXT DEFAULT NULL"); } catch (PDOException $e) { /* already exists */ }
+try { $db->exec("ALTER TABLE customers ADD COLUMN id_type VARCHAR(50) DEFAULT NULL"); } catch (PDOException $e) { /* already exists */ }
+try { $db->exec("ALTER TABLE customers ADD COLUMN id_number VARCHAR(100) DEFAULT NULL"); } catch (PDOException $e) { /* already exists */ }
+try { $db->exec("ALTER TABLE customers ADD COLUMN occupation VARCHAR(100) DEFAULT NULL"); } catch (PDOException $e) { /* already exists */ }
+try { $db->exec("ALTER TABLE customers ADD COLUMN employer VARCHAR(200) DEFAULT NULL"); } catch (PDOException $e) { /* already exists */ }
+try { $db->exec("CREATE INDEX IF NOT EXISTS idx_customers_branch ON customers (branch)"); } catch (PDOException $e) {}
+try { $db->exec("CREATE INDEX IF NOT EXISTS idx_customers_status ON customers (status)"); } catch (PDOException $e) {}
+try { $db->exec("CREATE INDEX IF NOT EXISTS idx_customers_name ON customers (full_name)"); } catch (PDOException $e) {}
+
+// ── Auto-create customer_products table if missing ──
+$db->exec("CREATE TABLE IF NOT EXISTS customer_products (
+    customer_id INTEGER NOT NULL,
+    product_name VARCHAR(50) NOT NULL,
+    PRIMARY KEY (customer_id, product_name)
+)");
+
 function generateInitialClientPassword(int $length = 14): string {
     $length = max(12, min($length, 32));
     $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%*?';
@@ -343,10 +391,11 @@ switch ($method) {
 
             $custNum = generateCustomerNumber();
             // ★ FIX (CUST-007): Include notes in customer creation
+            // ★ FIX: Use proper PostgreSQL boolean literal for kyc_verified
             $stmt = $db->prepare(
                 'INSERT INTO customers (customer_number, customer_type, full_name, status, risk_rating,
                                        branch, relationship_started, phone, email, kyc_verified, next_action, notes)
-                 VALUES (:num, :type, :name, :status, :risk, :branch, :rel, :phone, :email, :kyc, :next_action, :notes)'
+                 VALUES (:num, :type, :name, :status, :risk, :branch, :rel, :phone, :email, :kyc::boolean, :next_action, :notes)'
             );
             $stmt->execute([
                 ':num'    => $custNum,
@@ -358,11 +407,11 @@ switch ($method) {
                 ':rel'    => date('Y-m-d'),
                 ':phone'  => sanitize($input['phone'] ?? ''),
                 ':email'  => sanitize($input['email'] ?? ''),
-                ':kyc'    => FALSE,
+                ':kyc'    => 'false',
                 ':next_action' => sanitize($input['next_action'] ?? ''),
                 ':notes'  => sanitize($input['notes'] ?? ''),
             ]);
-            $newId = (int)$db->lastInsertId();
+            $newId = (int)$db->lastInsertId('customers_id_seq');
 
             // ── Save requested products ──
             $rawProducts = is_array($input['products'] ?? null) ? $input['products'] : [];
@@ -372,7 +421,10 @@ switch ($method) {
                 'Created customer: ' . $input['full_name'] . ' (products: ' . implode(', ', array_map('strtoupper', $rawProducts)) . ')',
                 $staff['department'], getClientIp());
             createdResponse(['id' => $newId, 'customer_number' => $custNum], 'Customer created successfully.');
-        } catch (PDOException $e) { serverErrorResponse('Failed to create customer.'); }
+        } catch (PDOException $e) {
+            error_log('ATLAS_BANK_CUSTOMER_CREATE: ' . $e->getMessage());
+            serverErrorResponse('Failed to create customer: ' . (APP_DEBUG ? $e->getMessage() : 'Database error.'));
+        }
         break;
     case 'PUT':
         if ($id === null) { validationError(['id' => 'Customer ID is required.']); }
@@ -396,13 +448,13 @@ switch ($method) {
             foreach (['full_name', 'status', 'risk_rating', 'branch', 'phone', 'email', 'next_action', 'notes'] as $f) {
                 if (isset($input[$f])) { $fields[] = "\"$f\" = :$f"; $params[":$f"] = sanitize($input[$f]); }
             }
-            // kyc_verified is BOOLEAN — handle separately to ensure TRUE/FALSE value
+            // kyc_verified is BOOLEAN — handle separately with PostgreSQL cast
             if (isset($input['kyc_verified'])) {
-                $fields[] = "\"kyc_verified\" = :kyc_verified";
-                $params[":kyc_verified"] = (int)$input['kyc_verified'] ? TRUE : FALSE;
+                $fields[] = "\"kyc_verified\" = :kyc_verified::boolean";
+                $params[":kyc_verified"] = (int)$input['kyc_verified'] ? 'true' : 'false';
             }
             if (empty($fields)) { errorResponse('No fields to update.'); }
-            $stmt = $db->prepare("UPDATE customers SET ' . implode(', ', $fields) . ' WHERE id = :id");
+            $stmt = $db->prepare('UPDATE customers SET ' . implode(', ', $fields) . ' WHERE id = :id');
             $stmt->execute($params);
             // Update products if provided
             if (isset($input['products'])) {

@@ -161,10 +161,13 @@ switch ($method) {
                 ':currency' => sanitize($input['currency'] ?? 'XAF'),
                 ':opened'   => date('Y-m-d')
             ]);
-            $newId = (int)$db->lastInsertId();
+            $newId = (int)$db->lastInsertId('accounts_id_seq');
             logAudit($staff['full_name'], 'ACCOUNT_CREATE', 'ACCOUNT', (string)$newId, 'SUCCESS', 'Opened account ' . $accNum, $staff['department'], getClientIp());
             createdResponse(['id' => $newId, 'account_number' => $accNum], 'Account opened successfully.');
-        } catch (PDOException $e) { serverErrorResponse('Failed to create account.'); }
+        } catch (PDOException $e) {
+            error_log('ATLAS_BANK_ACCOUNT_CREATE: ' . $e->getMessage());
+            serverErrorResponse('Failed to create account: ' . (APP_DEBUG ? $e->getMessage() : 'Database error.'));
+        }
         break;
     case 'PUT':
         if ($id === null) { validationError(['id' => 'Account ID is required.']); }
@@ -187,7 +190,7 @@ switch ($method) {
                 $params[":tax_exemptions"] = json_encode($input['tax_exemptions']);
             }
             if (empty($fields)) { errorResponse('No fields to update.'); }
-            $stmt = $db->prepare("UPDATE accounts SET ' . implode(', ', $fields) . ' WHERE id = :id");
+            $stmt = $db->prepare('UPDATE accounts SET ' . implode(', ', $fields) . ' WHERE id = :id');
             $stmt->execute($params);
             logAudit($staff['full_name'], 'ACCOUNT_UPDATE', 'ACCOUNT', $id, 'SUCCESS', 'Updated account ID: ' . $id, $staff['department'], getClientIp());
             successMessage('Account updated successfully.');
