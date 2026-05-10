@@ -2,3 +2,8 @@
 .vscode
 node_modules
 *.sql
+.env
+.env.*
+atlas-bank-backend/.env
+atlas-bank-backend/.env.*
+atlas-bank-backend/storage/rate_limits/*.json
