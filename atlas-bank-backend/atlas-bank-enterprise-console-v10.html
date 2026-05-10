@@ -3554,8 +3554,8 @@ async function loadAllData(opts = {}) {
     (_has('PROFITLOSS') || _has('CASHFLOW') || _has('REPORTS')) ? API.get('reports', {type:'profit_loss'}) : _skip(), // [17]
     (_has('OPERATING') || _has('EXPENSES') || _has('ACCOUNTS')) ? API.get('operating-account') : _skip(), // [18]
     _has('LOANS') || _has('ACCOUNTS') || _has('REPORTS') || _has('CASHFLOW') ? API.get('loan-fund-accounts') : _skip(), // [19]
-    _has('ACCOUNTS')          ? API.get('general-ledger')     : _skip(),         // [20] accounts + trial balance
-    _has('ACCOUNTS')          ? API.get('general-ledger/entries', {pageSize:1000}) : _skip(), // [21] GL journal entries
+    _has('ACCOUNTS')          ? API.get('general-ledger', _selBranch ? { branch: _selBranch } : undefined)     : _skip(),         // [20] accounts + trial balance
+    _has('ACCOUNTS')          ? API.get('general-ledger/entries', _selBranch ? { pageSize: 1000, branch: _selBranch } : { pageSize: 1000 }) : _skip(), // [21] GL journal entries
     _has('LOANS')             ? API.get('loan-applications', {pageSize:500}) : _skip(), // [22] real loan applications + checks from DB
   ]);
   
@@ -5366,6 +5366,8 @@ function onBranchSelect(branchName) {
   const dd = $('branchDropdown');
   if (dd) dd.classList.remove('open');
 }
+
+
 
 /** Toggle branch dropdown — allowed for admin AND multi-branch non-admin users */
 function toggleBranchDropdown() {
@@ -18438,17 +18440,66 @@ function getFilteredOperatingTxns() {
 /* ================================================================
    GL ACCOUNTS — Chart of Accounts + General Ledger Journal
    ================================================================ */
+
+/** ★ FIX: Re-fetch GL data when the header branch selector changes.
+ *  Uses STATE.currentBranch directly from the header selector — no separate
+ *  GL branch dropdown. Called by refreshGLData() and when navigating to GL view.
+ */
+async function onGLBranchFilterChange() {
+  if (API_CONNECTED) {
+    const branch = isAllBranchesMode() ? '' : String(STATE.currentBranch || '').trim();
+    // Show loading state
+    $('glCoaBody').innerHTML = '<tr><td colspan="9" class="empty-state"><div class="spinner" style="margin:0 auto"></div><p style="margin-top:8px">Loading GL data for ' + (branch || 'All Branches') + '...</p></td></tr>';
+    $('glJournalBody').innerHTML = '<tr><td colspan="9" class="empty-state"><div class="spinner" style="margin:0 auto"></div><p style="margin-top:8px">Loading journal entries...</p></td></tr>';
+    try {
+      // 1. Re-fetch GL accounts with computed balances
+      const glRes = await API.get('general-ledger', branch ? { branch } : undefined);
+      if (glRes?.data && glRes.data.accounts) {
+        DB.chartOfAccounts = glRes.data.accounts.map(a => ({
+          code: a.code, name: a.name, type: a.type, category: a.category||'',
+          description: a.description||'', isActive: !!a.is_active,
+          totalDebit: parseFloat(a.total_debit)||0, totalCredit: parseFloat(a.total_credit)||0,
+          netBalance: parseFloat(a.net_balance)||0, entryCount: a.entry_count||0,
+          lastEntryDate: a.last_entry_date||''
+        }));
+        DB.trialBalance = glRes.data.trial_balance || {};
+        DB.trialBalance._branch = branch || 'ALL';
+      }
+      // 2. Re-fetch GL journal entries
+      const entriesRes = await API.get('general-ledger/entries', branch ? { pageSize: 1000, branch } : { pageSize: 1000 });
+      if (entriesRes?.data) {
+        const entries = Array.isArray(entriesRes.data) ? entriesRes.data : (entriesRes.data.data || []);
+        DB.generalLedger = entries.map(e => ({
+          id: e.id, date: e.date||'', reference: e.reference||'',
+          accountCode: e.account_code||'', accountName: e.account_name||'',
+          debit: parseFloat(e.debit)||0, credit: parseFloat(e.credit)||0,
+          contraAccount: e.contra_account||'', transactionType: e.transaction_type||'',
+          description: e.description||'', postedBy: e.posted_by_name||'',
+          branch: e.branch||''
+        }));
+      }
+    } catch(e) { console.error('[GL Branch Filter] Fetch error:', e); }
+  }
+  renderGLAccounts();
+}
+
 function renderGLAccounts() {
   const coa = DB.chartOfAccounts || [];
   const glEntries = DB.generalLedger || [];
 
-  // Branch context banner — admin sees individual or company-wide based on selection
-  const bannerHtml = isAllBranchesMode() ? '' : `<div style="padding:10px 16px;background:rgba(103,232,181,.08);border:1px solid rgba(103,232,181,.2);border-radius:10px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:.84rem;color:var(--accent)">
+  // ★ Branch filtering now uses the HEADER branch selector directly (STATE.currentBranch).
+  // No separate GL branch dropdown — the main branch filter at the top controls everything.
+
+  // Branch context banner
+  const effectiveBranch = isAllBranchesMode() ? '' : STATE.currentBranch;
+  const isAllBranches = isAllBranchesMode();
+
+  const bannerHtml = isAllBranches ? '' : `<div style="padding:10px 16px;background:rgba(103,232,181,.08);border:1px solid rgba(103,232,181,.2);border-radius:10px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:.84rem;color:var(--accent)">
     <span style="display:inline-flex"><i data-lucide="map-pin" style="width:18px;height:18px;stroke-width:1.8"></i></span>
-    <div><strong>Branch: ${STATE.currentBranch}</strong> — GL Accounts show journal entries for the selected branch only. Switch to &quot;All Branches&quot; to see the full company-wide ledger.</div>
+    <div><strong>Branch: ${effectiveBranch}</strong> — GL Accounts show journal entries for the selected branch only. Switch to &quot;All Branches&quot; in the header to see the full company-wide ledger.</div>
   </div>`;
 
-  // Branch isolation: filter GL entries by current branch selection
+  // Branch isolation: filter GL entries using the header branch selector
   const branchGlEntries = filterByUserBranch(glEntries);
 
   // ── Populate category filter ──
@@ -19078,7 +19129,8 @@ async function refreshGLData() {
   let glOk = false, entriesOk = false, opOk = false;
 
   try {
-    const branch = isAllBranchesMode() ? '' : STATE.currentBranch;
+    // ★ Branch filtering uses the header branch selector directly (STATE.currentBranch).
+    const branch = isAllBranchesMode() ? '' : String(STATE.currentBranch || '').trim();
     // 1. Re-fetch GL accounts with computed balances
     try {
       const glRes = await API.get('general-ledger', branch ? { branch } : undefined);
