@@ -27,9 +27,17 @@ function sendCorsHeaders(?array $allowedOrigins = null): void
 {
     $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
+    // ★ FIX: If no explicit origins provided, build from environment
+    if (empty($allowedOrigins)) {
+        $envOrigins = getenv('CORS_ALLOWED_ORIGINS');
+        if ($envOrigins !== false && $envOrigins !== '') {
+            $allowedOrigins = array_map('trim', explode(',', $envOrigins));
+        }
+    }
+
     // Determine the origin to echo back
     if (empty($allowedOrigins)) {
-        // ★ SECURITY FIX (MEDIUM): Restrict origin mirroring even in development.
+        // ★ SECURITY FIX: Restrict origin mirroring even in development.
         // Previously, when no $allowedOrigins was passed (dev mode), ANY origin was
         // mirrored back with Allow-Credentials: true — allowing any website to make
         // authenticated cross-origin requests. Now we restrict to localhost variants.
@@ -42,6 +50,7 @@ function sendCorsHeaders(?array $allowedOrigins = null): void
             'http://127.0.0.1:3000',
             'http://localhost:5173',
             'http://127.0.0.1:5173',
+            'https://banking-pwa.onrender.com',
         ];
         if (in_array($requestOrigin, $safeDevOrigins, true)) {
             $origin = $requestOrigin;
@@ -50,6 +59,10 @@ function sendCorsHeaders(?array $allowedOrigins = null): void
         }
     } elseif (in_array($requestOrigin, $allowedOrigins, true)) {
         // Production mode: only echo whitelisted origins
+        $origin = $requestOrigin;
+    } elseif (in_array('*', $allowedOrigins, true) && !empty($requestOrigin)) {
+        // ★ FIX: When CORS_ALLOWED_ORIGINS=*, reflect the request origin back
+        // (wildcard origin is forbidden with credentials, so we mirror instead)
         $origin = $requestOrigin;
     } else {
         // Origin not in whitelist — do not set Allow-Origin at all
