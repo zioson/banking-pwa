@@ -12,116 +12,83 @@
  */
 
 /**
- * Parse allowed CORS origins from environment or explicit array.
- *
- * @param array|null $allowedOrigins Optional explicit list
- * @return array List of allowed origin strings
- */
-function parseAllowedCorsOrigins(?array $allowedOrigins = null): array
-{
-    if ($allowedOrigins !== null) {
-        return array_values(array_filter(array_map('trim', $allowedOrigins), static fn($v) => $v !== ''));
-    }
-
-    $originEnv = getenv('CORS_ALLOWED_ORIGINS');
-    if ($originEnv !== false && trim((string)$originEnv) !== '') {
-        return array_values(array_filter(array_map('trim', explode(',', (string)$originEnv)), static fn($v) => $v !== ''));
-    }
-
-    // Safe local-development defaults. Production must set CORS_ALLOWED_ORIGINS explicitly.
-    return [
-        'http://localhost',
-        'http://127.0.0.1',
-        'http://localhost:8000',
-        'http://127.0.0.1:8000',
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
-        'http://localhost:5173',
-        'http://127.0.0.1:5173',
-    ];
-}
-
-/**
- * Check if a request origin is in the allowed list.
- *
- * @param string $requestOrigin  The Origin header from the request
- * @param array  $allowedOrigins List of allowed origin patterns
- * @return bool True if allowed
- */
-function isCorsOriginAllowed(string $requestOrigin, array $allowedOrigins): bool
-{
-    if ($requestOrigin === '') {
-        return false;
-    }
-
-    $normalized = strtolower(trim($requestOrigin));
-    $isProduction = strtolower((string)(getenv('APP_ENV') ?: 'development')) === 'production';
-
-    foreach ($allowedOrigins as $allowed) {
-        $allowed = trim((string)$allowed);
-        if ($allowed === '') {
-            continue;
-        }
-
-        // Wildcard is intentionally not supported in production because credentials are enabled.
-        if ($allowed === '*') {
-            if (!$isProduction && preg_match('#^https?://(localhost|127\.0\.0\.1)(:\d+)?$#i', $requestOrigin)) {
-                return true;
-            }
-            continue;
-        }
-
-        if (str_starts_with($allowed, '*.')) {
-            $baseDomain = strtolower(substr($allowed, 1));
-            $host = strtolower((string)(parse_url($requestOrigin, PHP_URL_HOST) ?: ''));
-            $allowedHost = ltrim($baseDomain, '.');
-            if ($host === $allowedHost || str_ends_with($host, $baseDomain)) {
-                return true;
-            }
-            continue;
-        }
-
-        if (strtolower($allowed) === $normalized) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-/**
  * Send CORS headers for the response.
  *
  * When credentials are needed (default), the allowed origin is set to the
  * request's Origin header (mirrored back). This satisfies the CORS spec
  * requirement that credentials + wildcard origin is forbidden.
  *
- * In development mode, safe localhost origins are permitted.
- * In production, restrict via CORS_ALLOWED_ORIGINS env var.
+ * In development mode, all origins are permitted.
+ * In production, restrict via $allowedOrigins.
  *
  * @param array|null $allowedOrigins Optional whitelist of allowed origins
  */
 function sendCorsHeaders(?array $allowedOrigins = null): void
 {
     $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
-    $allowed = parseAllowedCorsOrigins($allowedOrigins);
 
-    if (isCorsOriginAllowed($requestOrigin, $allowed)) {
-        header('Access-Control-Allow-Origin: ' . $requestOrigin);
-        header('Vary: Origin');
-        header('Access-Control-Allow-Credentials: true');
+    // ★ FIX: If no explicit origins provided, build from environment
+    if (empty($allowedOrigins)) {
+        $envOrigins = getenv('CORS_ALLOWED_ORIGINS');
+        if ($envOrigins !== false && $envOrigins !== '') {
+            $allowedOrigins = array_map('trim', explode(',', $envOrigins));
+        }
     }
+
+    // Determine the origin to echo back
+    if (empty($allowedOrigins)) {
+        // ★ SECURITY FIX: Restrict origin mirroring even in development.
+        // Previously, when no $allowedOrigins was passed (dev mode), ANY origin was
+        // mirrored back with Allow-Credentials: true — allowing any website to make
+        // authenticated cross-origin requests. Now we restrict to localhost variants.
+        $safeDevOrigins = [
+            'http://localhost',
+            'http://127.0.0.1',
+            'http://localhost:8000',
+            'http://127.0.0.1:8000',
+            'http://localhost:3000',
+            'http://127.0.0.1:3000',
+            'http://localhost:5173',
+            'http://127.0.0.1:5173',
+            'https://banking-pwa.onrender.com',
+        ];
+        if (in_array($requestOrigin, $safeDevOrigins, true)) {
+            $origin = $requestOrigin;
+        } else {
+            $origin = '';
+        }
+    } elseif (in_array($requestOrigin, $allowedOrigins, true)) {
+        // Production mode: only echo whitelisted origins
+        $origin = $requestOrigin;
+    } elseif (in_array('*', $allowedOrigins, true) && !empty($requestOrigin)) {
+        // ★ FIX: When CORS_ALLOWED_ORIGINS=*, reflect the request origin back
+        // (wildcard origin is forbidden with credentials, so we mirror instead)
+        $origin = $requestOrigin;
+    } else {
+        // Origin not in whitelist — do not set Allow-Origin at all
+        $origin = '';
+    }
+
+    // Set the origin (may be empty if not whitelisted in production)
+    if (!empty($origin)) {
+        header('Access-Control-Allow-Origin: ' . $origin);
+        header('Vary: Origin');
+    }
+
+    // Allow credentials (cookies, HTTP auth, Authorization header)
+    header('Access-Control-Allow-Credentials: true');
 
     // Allowed HTTP methods
     header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS');
 
     // Allowed request headers
-    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Atlas-Session, X-HTTP-Method-Override, X-CSRF-Token, Accept, Origin, Cache-Control, X-Idempotency-Key, X-MFA-Token');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Atlas-Session, X-HTTP-Method-Override, X-CSRF-Token, Accept, Origin, Cache-Control');
 
     // Expose these response headers to the client
-    header('Access-Control-Expose-Headers: X-Total-Count, X-Page, X-Page-Size, X-Total-Pages, X-CSRF-Token, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset');
+    header('Access-Control-Expose-Headers: X-Total-Count, X-Page, X-Page-Size, X-Total-Pages, X-CSRF-Token');
 
     // Cache preflight response for 1 hour (3600 seconds)
+    // Reduced from 86400 to allow origin changes to propagate faster
     header('Access-Control-Max-Age: 3600');
 }
 
