@@ -555,7 +555,7 @@ switch ($method) {
         // Branch isolation: non-admin users can only see staff assigned to their branches
         // ★ FIX (SP-001): If non-admin has NO assigned branches, show NO staff (not ALL).
         // Previously, empty $userBranches meant no WHERE clause was added, leaking all staff.
-        if (!isCurrentUserAdmin($staff)) {
+        if (!in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN'])) {
             $userBranches = $staff['branches'] ?? [];
             if (!empty($userBranches)) {
                 $placeholders = array_map(function($i) { return ':ubranch_' . $i; }, array_keys($userBranches));

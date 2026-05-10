@@ -46,7 +46,7 @@ function rptNormalizeBranch(string $branch): string {
 }
 
 function rptGetBranchFilter(PDO $db, array $staff, string $requestedBranch = ''): string {
-    $isAdmin = strtoupper($staff['role'] ?? '') === 'ADMIN';
+    $isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
     $requestedBranch = rptNormalizeBranch($requestedBranch);
     
     // If an Admin explicitly requests a branch, filter by it.
@@ -92,7 +92,7 @@ function rptGetUserBranches(PDO $db, array $staff): array {
 }
 
 function rptBindBranchFilter(PDO $db, PDOStatement $stmt, array $staff, string $requestedBranch = ''): void {
-    $isAdmin = strtoupper($staff['role'] ?? '') === 'ADMIN';
+    $isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
     $requestedBranch = rptNormalizeBranch($requestedBranch);
 
     if ($isAdmin && $requestedBranch !== '') {
@@ -344,7 +344,7 @@ function buildPLBranchFilters(PDO $db, array $staff, array $get): array {
     if ($branch !== '') {
         $branch = $bn;
     }
-    $isAdmin = strtoupper($staff['role'] ?? '') === 'ADMIN';
+    $isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
     $userBranches = $isAdmin ? [] : rptGetUserBranches($db, $staff);
     if (!empty($userBranches)) {
         $userBranches = array_values(array_filter(array_map(function($b) {
@@ -434,7 +434,7 @@ function computeOperatingFundForPL(PDO $db, array $staff, string $requestedBranc
     $params = [':gl_code' => '1400'];
     $where = ' WHERE account_code = :gl_code';
 
-    $isAdmin = strtoupper($staff['role'] ?? '') === 'ADMIN';
+    $isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
     $userBranches = $isAdmin ? [] : rptGetUserBranches($db, $staff);
     $hasScopedBranches = !$isAdmin && !empty($userBranches) && !in_array('ALL', $userBranches, true);
 
@@ -765,7 +765,7 @@ switch ($method) {
                     if (!empty($glBranchClause)) {
                         $glWhere .= preg_replace('/\bbranch\b/', 'branch', $glBranchClause);
                         $glParams = array_merge($glParams, $bf['pl_branch_params'] ?? [], $bf['pl_branch_param'] ?? []);
-                    } elseif (strtoupper($staff['role'] ?? '') !== 'ADMIN') {
+                    } elseif (!in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN'])) {
                         $userBr = rptGetUserBranches($db, $staff);
                         if (!empty($userBr) && !in_array('ALL', $userBr, true)) {
                             $ph = [];
@@ -812,7 +812,7 @@ switch ($method) {
                         if (!empty($lftBranchClause)) {
                             $lftWhere .= preg_replace('/\bbranch\b/', 'lft.branch', $lftBranchClause);
                             $lftParams = array_merge($lftParams, $bf['pl_branch_params'] ?? [], $bf['pl_branch_param'] ?? []);
-                        } elseif (strtoupper($staff['role'] ?? '') !== 'ADMIN') {
+                        } elseif (!in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN'])) {
                             $userBr = rptGetUserBranches($db, $staff);
                             if (!empty($userBr) && !in_array('ALL', $userBr, true)) {
                                 $ph = [];
@@ -919,7 +919,7 @@ switch ($method) {
                     $incBrchClause = $bf['pl_branch'] ?? '';
                     $incBrchParams = $bf['pl_branch_params'] ?? [];
                     $incBrchParam = $bf['pl_branch_param'] ?? [];
-                    if (empty($incBrchClause) && strtoupper($staff['role'] ?? '') !== 'ADMIN') {
+                    if (empty($incBrchClause) && !in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN'])) {
                         $userBr = rptGetUserBranches($db, $staff);
                         if (!empty($userBr)) {
                             $ph = array_map(function($i) { return ':_ibr_' . $i; }, array_keys($userBr));
@@ -1038,7 +1038,7 @@ switch ($method) {
                     $expBrchClause = $bf['exp_branch'] ?? '';
                     $expBrchParams = $bf['exp_branch_params'] ?? [];
                     $expBrchParam = $bf['exp_branch_param'] ?? [];
-                    if (empty($expBrchClause) && strtoupper($staff['role'] ?? '') !== 'ADMIN') {
+                    if (empty($expBrchClause) && !in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN'])) {
                         $userBr = rptGetUserBranches($db, $staff);
                         if (!empty($userBr)) {
                             $ph = array_map(function($i) { return ':_ebr_' . $i; }, array_keys($userBr));
@@ -1455,7 +1455,7 @@ switch ($method) {
                     if (!empty($liBranchClause)) {
                         $liWhere .= preg_replace('/\bbranch\b/', 'branch', $liBranchClause);
                         $liParams = array_merge($liParams, $bf['pl_branch_params'] ?? [], $bf['pl_branch_param'] ?? []);
-                    } elseif (strtoupper($staff['role'] ?? '') !== 'ADMIN') {
+                    } elseif (!in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN'])) {
                         $userBr = rptGetUserBranches($db, $staff);
                         if (!empty($userBr) && !in_array('ALL', $userBr, true)) {
                             $ph = [];

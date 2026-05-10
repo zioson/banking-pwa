@@ -348,7 +348,7 @@ switch ($method) {
 
             // Also attach the real-time GL balance for account 1400
             // ★ FIX (OP-FUND-011): Apply branch filtering for non-admin users
-            $_isAdmin = strtoupper($staff['role'] ?? '') === 'ADMIN';
+            $_isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
             $branchScope = $_isAdmin ? null : ($staff['branches'] ?? null);
             $glBalance = getGL1400Balance($db, $branchScope);
             $summary['gl_1400_balance'] = $glBalance;
@@ -402,7 +402,7 @@ switch ($method) {
                 $account = getDefaultOpAccount($db);
 
                 // ★ FIX (OP-FUND-011): Use branch scope for balance check
-                $_isAdmin = strtoupper($staff['role'] ?? '') === 'ADMIN';
+                $_isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
                 $branchScope = $_isAdmin ? null : ($staff['branches'] ?? null);
 
                 $currentGLBalance = getGL1400Balance($db, $branchScope);
@@ -500,7 +500,7 @@ switch ($method) {
                 // ── Balance check from GL 1400 (source of truth) BEFORE beginTransaction ──
                 // This avoids leaking an open transaction on error.
                 // ★ FIX (OP-FUND-011): Use branch scope for balance check
-                $_isAdmin = strtoupper($staff['role'] ?? '') === 'ADMIN';
+                $_isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
                 $branchScope = $_isAdmin ? null : ($staff['branches'] ?? null);
                 $currentGLBalance = getGL1400Balance($db, $branchScope);
 
@@ -606,7 +606,7 @@ switch ($method) {
 
                 // ── Balance check from GL 1400 (source of truth) BEFORE beginTransaction ──
                 // ★ FIX (OP-FUND-011): Use branch scope for balance check
-                $_isAdmin = strtoupper($staff['role'] ?? '') === 'ADMIN';
+                $_isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
                 $branchScope = $_isAdmin ? null : ($staff['branches'] ?? null);
                 $currentGLBalance = getGL1400Balance($db, $branchScope);
 

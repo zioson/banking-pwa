@@ -55,7 +55,7 @@ function loanAddCol(PDO $db, string $table, string $col, string $def): void {
 function loanCanAccessBranch(array $staff, string $branch): bool {
     $branch = strtoupper(trim($branch));
     if ($branch === '') return true;
-    if (strtoupper($staff['role'] ?? '') === 'ADMIN') return true;
+    if (in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN'])) return true;
     $staffBranchesRaw = $staff['branches'] ?? [];
     if (is_string($staffBranchesRaw)) {
         $staffBranchesRaw = [$staffBranchesRaw];

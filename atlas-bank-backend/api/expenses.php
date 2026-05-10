@@ -267,7 +267,7 @@ switch ($method) {
 
             // ★ FIX (EXP-B002): Enforce branch isolation on PUT —
             // non-admin cannot approve/reject/edit expenses from other branches
-            if (strtoupper($staff['role'] ?? '') !== 'ADMIN' && !hasBranchAccess((string)($expense['branch'] ?? ''), $staff)) {
+            if (!in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']) && !hasBranchAccess((string)($expense['branch'] ?? ''), $staff)) {
                 errorResponse('Access denied. You cannot act on expenses from a branch you are not assigned to.', 403);
             }
 

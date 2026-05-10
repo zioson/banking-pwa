@@ -470,7 +470,7 @@ switch ($method) {
                 }
             }
             if ($inputBranch !== '') {
-                if (!hasBranchAccess($staff, $inputBranch)) {
+                if (!hasBranchAccess($inputBranch, $staff)) {
                     errorResponse('Access denied: you do not have branch access for this posting.', 403);
                     break;
                 }

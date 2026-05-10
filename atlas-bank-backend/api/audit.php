@@ -382,7 +382,7 @@ function buildAuditDashboard(array $staff): array {
     $branchSql = function(string $column, array &$params) use ($staffBranches, $clientBranch, $role): string {
         return applyBranchFilter($staffBranches, $clientBranch, $params, $role, $column);
     };
-    $scopeBranch = $clientBranch ?: ((strtoupper($role) === 'ADMIN') ? 'ALL' : (count($staffBranches) === 1 ? $staffBranches[0] : 'ALL_MY_BRANCHES'));
+    $scopeBranch = $clientBranch ?: ((in_array(strtoupper($role), ['ADMIN', 'SUPER_ADMIN'])) ? 'ALL' : (count($staffBranches) === 1 ? $staffBranches[0] : 'ALL_MY_BRANCHES'));
 
     // ── 1. Basic counts ── NOTE: Must use fetchColumn() because PDO default mode is FETCH_ASSOC,
     //    so fetch()[0] would return null on associative arrays. fetchColumn() returns the

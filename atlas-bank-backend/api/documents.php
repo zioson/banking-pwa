@@ -251,7 +251,7 @@ switch ($method) {
             // ★ DOC-IA-008 FIX: Branch isolation on PUT — verify the document belongs to user's branch
             // before allowing updates (especially void operations)
             $role = strtoupper((string)($staff['role'] ?? ''));
-            if ($role !== 'ADMIN') {
+            if (!in_array($role, ['ADMIN', 'SUPER_ADMIN'], true)) {
                 $staffBranchesRaw = $staff['branches'] ?? [];
                 if (is_string($staffBranchesRaw)) {
                     $staffBranchesRaw = [$staffBranchesRaw];

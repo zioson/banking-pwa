@@ -117,7 +117,7 @@ switch ($method) {
         // ── GET /api/branches/stats ──
         if ($id === 'stats') {
             // Branch isolation: non-admin only sees their assigned branches
-            $isAdmin = (strtoupper($staff['role'] ?? '') === 'ADMIN');
+            $isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
             $branchFilterClause = '';
             $branchFilterParams = [];
             if (!$isAdmin) {
@@ -305,7 +305,7 @@ switch ($method) {
         $where  = buildWhere($_GET, ['status', 'region'], [], $params);
 
         // ── Branch isolation: non-admin only sees their assigned branches ──
-        $isAdmin = (strtoupper($staff['role'] ?? '') === 'ADMIN');
+        $isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
         if (!$isAdmin) {
             $userBranchNames = [];
             try {

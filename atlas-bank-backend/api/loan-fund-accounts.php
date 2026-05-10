@@ -54,7 +54,7 @@ function lfNormalizeBranches(array $branches): array {
 function lfCanAccessBranch(array $staff, string $branch): bool {
     $branch = strtoupper(trim($branch));
     if ($branch === '') return true;
-    if (strtoupper($staff['role'] ?? '') === 'ADMIN') return true;
+    if (in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN'])) return true;
     $staffBranches = lfNormalizeBranches($staff['branches'] ?? []);
     if (in_array('ALL', $staffBranches, true)) return true;
     return empty($staffBranches) ? false : in_array($branch, $staffBranches, true);
@@ -567,7 +567,7 @@ switch ($method) {
             if ($requestedBranch !== '' && !lfCanAccessBranch($staff, $requestedBranch)) {
                 errorResponse('Access denied. You cannot view loan-fund activity for a branch outside your assignment.', 403);
             }
-            $effectiveBranches = strtoupper($staff['role'] ?? '') === 'ADMIN'
+            $effectiveBranches = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN'])
                 ? []
                 : lfNormalizeBranches($staff['branches'] ?? []);
             if (in_array('ALL', $effectiveBranches, true)) {

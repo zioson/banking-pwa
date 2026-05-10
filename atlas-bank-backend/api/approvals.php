@@ -25,7 +25,7 @@ function apprNormalizeBranches(array $branches): array {
 function apprCanAccessBranch(array $staff, string $branch): bool {
     $branch = strtoupper(trim($branch));
     if ($branch === '') return true;
-    if (strtoupper($staff['role'] ?? '') === 'ADMIN') return true;
+    if (in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN'])) return true;
     $staffBranches = apprNormalizeBranches($staff['branches'] ?? []);
     if (in_array('ALL', $staffBranches, true)) return true;
     return empty($staffBranches) ? false : in_array($branch, $staffBranches, true);

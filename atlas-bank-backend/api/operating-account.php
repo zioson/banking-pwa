@@ -46,7 +46,7 @@ require_once __DIR__ . '/../middleware/rbac.php';
 // operating fund. Now requires ACCOUNTS module and ADMIN/MANAGER/ACCOUNTANT role.
 $staff = requireAuth();
 $method = $_ROUTE['method'];
-$isAdmin = strtoupper($staff['role'] ?? '') === 'ADMIN';
+$isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
 
 // GET: Any authenticated user can read operating account data.
 // POST: Requires ACCOUNTS module + ADMIN/MANAGER/ACCOUNTANT role.

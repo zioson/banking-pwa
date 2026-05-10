@@ -149,7 +149,7 @@ switch ($method) {
             // Previously, a branch-restricted user could access any transaction by ID,
             // including transactions from other branches. This is a security concern.
             $role = strtoupper((string)($staff['role'] ?? ''));
-            if ($role !== 'ADMIN') {
+            if (!in_array($role, ['ADMIN', 'SUPER_ADMIN'], true)) {
                 $staffBranchesRaw = $staff['branches'] ?? [];
                 if (is_string($staffBranchesRaw)) {
                     $staffBranchesRaw = [$staffBranchesRaw];
@@ -190,7 +190,7 @@ switch ($method) {
             $clientBranch = sanitize($_GET['branch'] ?? '');
             $targetAccount = sanitize($_GET['account'] ?? '');
 
-            $isAdmin = (strtoupper($staff['role'] ?? '') === 'ADMIN');
+            $isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
 
             // If staff is restricted by branch...
             $staffBranchesNorm = $staffBranches;
@@ -266,7 +266,7 @@ switch ($method) {
 
             // ★ SECURITY FIX: Apply branch isolation to status updates
             $role = strtoupper((string)($staff['role'] ?? ''));
-            if ($role !== 'ADMIN') {
+            if (!in_array($role, ['ADMIN', 'SUPER_ADMIN'], true)) {
                 $staffBranchesRaw = $staff['branches'] ?? [];
                 if (is_string($staffBranchesRaw)) {
                     $staffBranchesRaw = [$staffBranchesRaw];
