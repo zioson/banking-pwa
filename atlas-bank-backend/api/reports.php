@@ -46,7 +46,7 @@ function rptNormalizeBranch(string $branch): string {
 }
 
 function rptGetBranchFilter(PDO $db, array $staff, string $requestedBranch = ''): string {
-    $isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
+    $isAdmin = strtoupper($staff['role'] ?? '') === 'ADMIN';
     $requestedBranch = rptNormalizeBranch($requestedBranch);
     
     // If an Admin explicitly requests a branch, filter by it.
@@ -92,7 +92,7 @@ function rptGetUserBranches(PDO $db, array $staff): array {
 }
 
 function rptBindBranchFilter(PDO $db, PDOStatement $stmt, array $staff, string $requestedBranch = ''): void {
-    $isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
+    $isAdmin = strtoupper($staff['role'] ?? '') === 'ADMIN';
     $requestedBranch = rptNormalizeBranch($requestedBranch);
 
     if ($isAdmin && $requestedBranch !== '') {
@@ -129,9 +129,9 @@ function rptBindBranchFilter(PDO $db, PDOStatement $stmt, array $staff, string $
  */
 function reportSafeAddCol(PDO $db, string $table, string $col, string $def): void {
     try {
-        $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ? AND column_name = ?");
+        $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_name = ? AND column_name = ?");
         $r->execute([$table, $col]);
-        if (!$r->fetch()) $db->exec("ALTER TABLE \"$table\" ADD COLUMN \"$col\" $def");
+        if (!$r) $db->exec("ALTER TABLE $table ADD COLUMN $col $def");
     } catch (PDOException $e) {
         error_log('[Reports Schema] safeAddCol(' . $table . '.' . $col . ') failed: ' . $e->getMessage());
     }
@@ -142,9 +142,8 @@ function reportSafeAddCol(PDO $db, string $table, string $col, string $def): voi
  */
 function reportAddCol(PDO $db, string $col, string $def): void {
     try {
-        $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'profit_ledger' AND column_name = ?");
-        $r->execute([$col]);
-        if (!$r->fetch()) $db->exec('ALTER TABLE "profit_ledger" ADD COLUMN "' . $col . '" ' . $def);
+        $r = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'profit_ledger' AND column_name = '$col'")->fetch();
+        if (!$r) $db->exec("ALTER TABLE profit_ledger ADD COLUMN $col $def");
     } catch (PDOException $e) {
         error_log('[Reports Schema] reportAddCol(' . $col . ') failed: ' . $e->getMessage());
     }
@@ -240,7 +239,7 @@ function ensureTransactionsSchema(PDO $db): void {
 
 function reportHasTable(PDO $db, string $table): bool {
     try {
-        $stmt = $db->prepare("SELECT table_name FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = ?");
+        $stmt = $db->prepare("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' LIKE ?");
         $stmt->execute([$table]);
         return (bool)$stmt->fetchColumn();
     } catch (PDOException $e) {
@@ -287,11 +286,10 @@ function ensureLoanFundTxSchema(PDO $db): void {
         }
         try {
             $db->exec("
-                UPDATE loan_fund_transactions
-                SET branch = l.branch
-                FROM loans l
-                WHERE loan_fund_transactions.loan_id = l.id
-                  AND (loan_fund_transactions.branch IS NULL OR TRIM(loan_fund_transactions.branch) = '')
+                UPDATE loan_fund_transactions lft
+                JOIN loans l ON l.id = lft.loan_id
+                SET lft.branch = l.branch
+                WHERE (lft.branch IS NULL OR TRIM(lft.branch) = '')
                   AND l.branch IS NOT NULL AND TRIM(l.branch) <> ''
             ");
         } catch (PDOException $e) {}
@@ -344,7 +342,7 @@ function buildPLBranchFilters(PDO $db, array $staff, array $get): array {
     if ($branch !== '') {
         $branch = $bn;
     }
-    $isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
+    $isAdmin = strtoupper($staff['role'] ?? '') === 'ADMIN';
     $userBranches = $isAdmin ? [] : rptGetUserBranches($db, $staff);
     if (!empty($userBranches)) {
         $userBranches = array_values(array_filter(array_map(function($b) {
@@ -434,7 +432,7 @@ function computeOperatingFundForPL(PDO $db, array $staff, string $requestedBranc
     $params = [':gl_code' => '1400'];
     $where = ' WHERE account_code = :gl_code';
 
-    $isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
+    $isAdmin = strtoupper($staff['role'] ?? '') === 'ADMIN';
     $userBranches = $isAdmin ? [] : rptGetUserBranches($db, $staff);
     $hasScopedBranches = !$isAdmin && !empty($userBranches) && !in_array('ALL', $userBranches, true);
 
@@ -765,7 +763,7 @@ switch ($method) {
                     if (!empty($glBranchClause)) {
                         $glWhere .= preg_replace('/\bbranch\b/', 'branch', $glBranchClause);
                         $glParams = array_merge($glParams, $bf['pl_branch_params'] ?? [], $bf['pl_branch_param'] ?? []);
-                    } elseif (!in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN'])) {
+                    } elseif (strtoupper($staff['role'] ?? '') !== 'ADMIN') {
                         $userBr = rptGetUserBranches($db, $staff);
                         if (!empty($userBr) && !in_array('ALL', $userBr, true)) {
                             $ph = [];
@@ -812,7 +810,7 @@ switch ($method) {
                         if (!empty($lftBranchClause)) {
                             $lftWhere .= preg_replace('/\bbranch\b/', 'lft.branch', $lftBranchClause);
                             $lftParams = array_merge($lftParams, $bf['pl_branch_params'] ?? [], $bf['pl_branch_param'] ?? []);
-                        } elseif (!in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN'])) {
+                        } elseif (strtoupper($staff['role'] ?? '') !== 'ADMIN') {
                             $userBr = rptGetUserBranches($db, $staff);
                             if (!empty($userBr) && !in_array('ALL', $userBr, true)) {
                                 $ph = [];
@@ -919,7 +917,7 @@ switch ($method) {
                     $incBrchClause = $bf['pl_branch'] ?? '';
                     $incBrchParams = $bf['pl_branch_params'] ?? [];
                     $incBrchParam = $bf['pl_branch_param'] ?? [];
-                    if (empty($incBrchClause) && !in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN'])) {
+                    if (empty($incBrchClause) && strtoupper($staff['role'] ?? '') !== 'ADMIN') {
                         $userBr = rptGetUserBranches($db, $staff);
                         if (!empty($userBr)) {
                             $ph = array_map(function($i) { return ':_ibr_' . $i; }, array_keys($userBr));
@@ -1038,7 +1036,7 @@ switch ($method) {
                     $expBrchClause = $bf['exp_branch'] ?? '';
                     $expBrchParams = $bf['exp_branch_params'] ?? [];
                     $expBrchParam = $bf['exp_branch_param'] ?? [];
-                    if (empty($expBrchClause) && !in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN'])) {
+                    if (empty($expBrchClause) && strtoupper($staff['role'] ?? '') !== 'ADMIN') {
                         $userBr = rptGetUserBranches($db, $staff);
                         if (!empty($userBr)) {
                             $ph = array_map(function($i) { return ':_ebr_' . $i; }, array_keys($userBr));
@@ -1455,7 +1453,7 @@ switch ($method) {
                     if (!empty($liBranchClause)) {
                         $liWhere .= preg_replace('/\bbranch\b/', 'branch', $liBranchClause);
                         $liParams = array_merge($liParams, $bf['pl_branch_params'] ?? [], $bf['pl_branch_param'] ?? []);
-                    } elseif (!in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN'])) {
+                    } elseif (strtoupper($staff['role'] ?? '') !== 'ADMIN') {
                         $userBr = rptGetUserBranches($db, $staff);
                         if (!empty($userBr) && !in_array('ALL', $userBr, true)) {
                             $ph = [];
@@ -1874,10 +1872,10 @@ switch ($method) {
                 try {
                     // Ensure fee column exists
                     try { $db->query("SELECT fee FROM transactions LIMIT 1"); } catch (PDOException $e) {
-                        $db->exec("ALTER TABLE \"transactions\" ADD COLUMN \"fee\" DECIMAL(20,2) DEFAULT 0");
+                        $db->exec("ALTER TABLE transactions ADD COLUMN fee DECIMAL(20,2) DEFAULT 0");
                     }
                     try { $db->query("SELECT fee_pct FROM transactions LIMIT 1"); } catch (PDOException $e) {
-                        $db->exec("ALTER TABLE \"transactions\" ADD COLUMN \"fee_pct\" DECIMAL(8,4) DEFAULT 0");
+                        $db->exec("ALTER TABLE transactions ADD COLUMN fee_pct DECIMAL(8,4) DEFAULT 0");
                     }
 
                     $stmt = $db->prepare("
@@ -1976,7 +1974,7 @@ switch ($method) {
                     'operator'        => [sanitize($input['operator'] ?? ''),        's'],
                     'description'     => [sanitize($input['description'] ?? ''),     's'],
                 ];
-                $existingCols = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'profit_ledger' ORDER BY ordinal_position")->fetchAll(PDO::FETCH_COLUMN, 0);
+                $existingCols = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'profit_ledger' ORDER BY ordinal_position")->fetchAll(PDO::FETCH_COLUMN, 0);
                 foreach ($colMap as $col => $val) {
                     if (in_array($col, $existingCols, true)) {
                         $insertCols[] = '"' . $col . '"';
@@ -1991,7 +1989,7 @@ switch ($method) {
                 $sql = 'INSERT INTO profit_ledger (' . implode(', ', $insertCols) . ') VALUES (' . implode(', ', array_keys($insertParams)) . ')';
                 $stmt = $db->prepare($sql);
                 $stmt->execute($insertParams);
-                $newId = (int)$db->lastInsertId('profit_ledger_id_seq');
+                $newId = (int)$db->lastInsertId();
                 logAudit($staff['full_name'] ?? 'System', 'PROFIT_LEDGER_ENTRY', 'REPORTS', (string)$newId, 'SUCCESS',
                     'Recorded profit ledger entry for branch ' . ($input['branch'] ?? 'all'), $staff['department'] ?? '', getClientIp());
                 createdResponse(['id' => $newId], 'Profit ledger entry recorded.');
@@ -2020,16 +2018,15 @@ switch ($method) {
                     // Ensure fee column exists
                     try {
                         foreach (['fee' => 'DECIMAL(20,2) DEFAULT 0', 'fee_pct' => 'DECIMAL(8,4) DEFAULT 0'] as $col => $def) {
-                            $cStmt = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'transactions' AND column_name = ?");
-                            $cStmt->execute([$col]);
-                            if (!$cStmt->fetch()) $db->exec('ALTER TABLE "transactions" ADD COLUMN "' . $col . '" ' . $def);
+                            $c = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'transactions' AND column_name = '$col'")->fetch();
+                            if (!$c) $db->exec("ALTER TABLE transactions ADD COLUMN $col $def");
                         }
                     } catch (PDOException $colErr) {
                         error_log('[Backfill] Column migration warning: ' . $colErr->getMessage());
                     }
 
                     // Check if fee column actually exists now
-                    $feeColExists = (bool)$db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'transactions' AND column_name = 'fee'")->fetch();
+                    $feeColExists = (bool)$db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'transactions' AND column_name = 'fee'")->fetch();
 
                     if ($feeColExists) {
                         // Full backfill: match both FEE-type transactions AND withdrawals with fee > 0

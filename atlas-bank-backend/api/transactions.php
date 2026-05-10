@@ -149,7 +149,7 @@ switch ($method) {
             // Previously, a branch-restricted user could access any transaction by ID,
             // including transactions from other branches. This is a security concern.
             $role = strtoupper((string)($staff['role'] ?? ''));
-            if (!in_array($role, ['ADMIN', 'SUPER_ADMIN'], true)) {
+            if ($role !== 'ADMIN') {
                 $staffBranchesRaw = $staff['branches'] ?? [];
                 if (is_string($staffBranchesRaw)) {
                     $staffBranchesRaw = [$staffBranchesRaw];
@@ -190,7 +190,7 @@ switch ($method) {
             $clientBranch = sanitize($_GET['branch'] ?? '');
             $targetAccount = sanitize($_GET['account'] ?? '');
 
-            $isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
+            $isAdmin = (strtoupper($staff['role'] ?? '') === 'ADMIN');
 
             // If staff is restricted by branch...
             $staffBranchesNorm = $staffBranches;
@@ -266,7 +266,7 @@ switch ($method) {
 
             // ★ SECURITY FIX: Apply branch isolation to status updates
             $role = strtoupper((string)($staff['role'] ?? ''));
-            if (!in_array($role, ['ADMIN', 'SUPER_ADMIN'], true)) {
+            if ($role !== 'ADMIN') {
                 $staffBranchesRaw = $staff['branches'] ?? [];
                 if (is_string($staffBranchesRaw)) {
                     $staffBranchesRaw = [$staffBranchesRaw];
@@ -866,7 +866,7 @@ switch ($method) {
                     $sql = 'INSERT INTO transactions (' . implode(', ', $insertColNames) . ') VALUES (' . implode(', ', $insertValues) . ')';
                     $stmt = $db->prepare($sql);
                     $stmt->execute($bindParamList);
-                    $newId = (int)$db->lastInsertId('transactions_id_seq');
+                    $newId = (int)$db->lastInsertId();
 
                     // ── Update account balance atomically ──
                     // Only for POSTED transactions (skip PENDING / PENDING_APPROVAL)

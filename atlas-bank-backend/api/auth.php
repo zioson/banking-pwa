@@ -98,11 +98,9 @@ switch ($method) {
             try {
                 $db = getDB();
                 $stmt = $db->prepare(
-                    'SELECT id, username, result, ip, user_agent, risk, device_fingerprint, timestamp AS created_at FROM login_history WHERE username = :uname ORDER BY timestamp DESC LIMIT CAST(:lim AS INTEGER)'
+                    'SELECT id, username, result, ip, user_agent, risk, device_fingerprint, timestamp AS created_at FROM login_history WHERE username = :uname ORDER BY timestamp DESC LIMIT :lim'
                 );
-                $stmt->bindValue(':uname', $staff['username']);
-                $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
-                $stmt->execute();
+                $stmt->execute([':uname' => $staff['username'], ':lim' => $limit]);
                 successResponse($stmt->fetchAll());
             } catch (PDOException $e) { serverErrorResponse('Failed to fetch login history.'); }
             break;

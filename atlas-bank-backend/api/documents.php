@@ -15,10 +15,11 @@ $id = $_ROUTE['id'];
  */
 function addColumnIfMissing(PDO $db, string $table, string $column, string $definition): void {
     try {
-        $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ? AND column_name = ?");
+        $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_name = ? AND column_name = ?");
         $r->execute([$table, $column]);
-        if (!$r->fetch()) {
-            $db->exec("ALTER TABLE \"$table\" ADD COLUMN \"$column\" $definition");
+        $col = $r->fetch();
+        if (!$col) {
+            $db->exec("ALTER TABLE $table ADD COLUMN $column $definition");
         }
     } catch (PDOException $e) {
         error_log("[Schema] addColumnIfMissing($table, $column) failed: " . $e->getMessage());
@@ -30,30 +31,30 @@ function ensureDocumentColumns(PDO $db): void {
     // ── Column renames (schema drift from older SQL dumps) ──
     try {
         $cols = [];
-        foreach ($db->query("SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'generated_documents' ORDER BY ordinal_position")->fetchAll(PDO::FETCH_ASSOC) as $c) {
-            $cols[strtolower($c['column_name'])] = true;
+        foreach ($db->query("SELECT column_name AS Field, data_type AS Type FROM information_schema.columns WHERE table_name = 'generated_documents' ORDER BY ordinal_position")->fetchAll(PDO::FETCH_ASSOC) as $c) {
+            $cols[strtolower($c['Field'])] = true;
         }
         // generated_at → created_at
         if (isset($cols['generated_at']) && !isset($cols['created_at'])) {
-            $db->exec('ALTER TABLE "generated_documents" RENAME COLUMN "generated_at" TO "created_at"');
+            $db->exec('ALTER TABLE generated_documents RENAME COLUMN "generated_at" TO "created_at"');
             $cols['created_at'] = true;
         }
         // period_from → period_start
         if (isset($cols['period_from']) && !isset($cols['period_start'])) {
-            $db->exec('ALTER TABLE "generated_documents" RENAME COLUMN "period_from" TO "period_start"');
+            $db->exec('ALTER TABLE generated_documents RENAME COLUMN "period_from" TO "period_start"');
             $cols['period_start'] = true;
         }
         // period_to → period_end
         if (isset($cols['period_to']) && !isset($cols['period_end'])) {
-            $db->exec('ALTER TABLE "generated_documents" RENAME COLUMN "period_to" TO "period_end"');
+            $db->exec('ALTER TABLE generated_documents RENAME COLUMN "period_to" TO "period_end"');
             $cols['period_end'] = true;
         }
         // data → content (add content if missing, copy data if content is empty)
         if (!isset($cols['content'])) {
             if (isset($cols['data'])) {
-                $db->exec('ALTER TABLE "generated_documents" ADD COLUMN "content" TEXT DEFAULT NULL');
+                $db->exec('ALTER TABLE generated_documents ADD COLUMN "content" TEXT DEFAULT NULL');
             } else {
-                $db->exec('ALTER TABLE "generated_documents" ADD COLUMN "content" TEXT DEFAULT NULL');
+                $db->exec('ALTER TABLE generated_documents ADD COLUMN "content" TEXT DEFAULT NULL');
             }
         }
     } catch (PDOException $e) {
@@ -74,17 +75,17 @@ function ensureDocumentColumns(PDO $db): void {
 
     // ── Fix restrictive ENUMs to VARCHAR ──
     try {
-        $col = $db->query("SELECT data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'generated_documents' AND column_name = 'type'")->fetch(PDO::FETCH_ASSOC);
-        if ($col && str_contains(strtolower($col['data_type']), 'enum')) {
-            $db->exec('ALTER TABLE "generated_documents" ALTER COLUMN "type" TYPE VARCHAR(20)');
+        $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'generated_documents' AND column_name = 'type'")->fetch();
+        if ($col && str_contains($col['Type'], 'enum(')) {
+            $db->exec('ALTER TABLE generated_documents ALTER COLUMN "type" TYPE VARCHAR(20)');
         }
     } catch (PDOException $e) {
         error_log("[Schema] Document type ENUM fix failed: " . $e->getMessage());
     }
     try {
-        $col = $db->query("SELECT data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'generated_documents' AND column_name = 'status'")->fetch(PDO::FETCH_ASSOC);
-        if ($col && str_contains(strtolower($col['data_type']), 'enum')) {
-            $db->exec('ALTER TABLE "generated_documents" ALTER COLUMN "status" TYPE VARCHAR(20)');
+        $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'generated_documents' AND column_name = 'status'")->fetch();
+        if ($col && str_contains($col['Type'], 'enum(')) {
+            $db->exec('ALTER TABLE generated_documents ALTER COLUMN "status" TYPE VARCHAR(20)');
         }
     } catch (PDOException $e) {
         error_log("[Schema] Document status ENUM fix failed: " . $e->getMessage());
@@ -93,7 +94,7 @@ function ensureDocumentColumns(PDO $db): void {
 
 $db = getDB();
 $db->exec("CREATE TABLE IF NOT EXISTS generated_documents (
-    id SERIAL PRIMARY KEY,
+    id INT PRIMARY KEY,
     document_number VARCHAR(100) NOT NULL,
     type VARCHAR(20) NOT NULL,
     subtype VARCHAR(100) DEFAULT NULL,
@@ -230,8 +231,8 @@ switch ($method) {
                     ':by' => $staff['id'], ':byname' => $staff['full_name'],
                     ':summary' => $summaryJson
                 ]);
-                logAudit($staff['full_name'], 'DOCUMENT_GENERATE', 'DOCUMENT', (string)$db->lastInsertId('documents_id_seq'), 'SUCCESS', 'Generated document ' . $docNum, $staff['department'], getClientIp());
-                createdResponse(['id' => (int)$db->lastInsertId('documents_id_seq'), 'document_number' => $docNum], 'Document generated successfully.');
+                logAudit($staff['full_name'], 'DOCUMENT_GENERATE', 'DOCUMENT', (string)$db->lastInsertId(), 'SUCCESS', 'Generated document ' . $docNum, $staff['department'], getClientIp());
+                createdResponse(['id' => (int)$db->lastInsertId(), 'document_number' => $docNum], 'Document generated successfully.');
             }
         } catch (PDOException $e) {
             error_log('[Documents POST] PDO error: ' . $e->getMessage());
@@ -251,7 +252,7 @@ switch ($method) {
             // ★ DOC-IA-008 FIX: Branch isolation on PUT — verify the document belongs to user's branch
             // before allowing updates (especially void operations)
             $role = strtoupper((string)($staff['role'] ?? ''));
-            if (!in_array($role, ['ADMIN', 'SUPER_ADMIN'], true)) {
+            if ($role !== 'ADMIN') {
                 $staffBranchesRaw = $staff['branches'] ?? [];
                 if (is_string($staffBranchesRaw)) {
                     $staffBranchesRaw = [$staffBranchesRaw];

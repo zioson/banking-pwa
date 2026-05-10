@@ -149,10 +149,10 @@ function invRequireWrite(array $staff): void
 
 function invAddCol(PDO $db, string $table, string $col, string $def): void
 {
-    $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ? AND column_name = ?");
+    $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_name = ? AND column_name = ?");
     $r->execute([$table, $col]);
-    if (!$r->fetch()) {
-        $db->exec("ALTER TABLE \"$table\" ADD COLUMN \"$col\" $def");
+    if (!$r) {
+        $db->exec("ALTER TABLE $table ADD COLUMN $col $def");
     }
 }
 
@@ -194,7 +194,7 @@ function invEnsureSchema(PDO $db): void
         max_target DECIMAL(20,2) NOT NULL,
         projected_div_rate DECIMAL(10,4) NOT NULL DEFAULT 12.0000,
         status VARCHAR(20) NOT NULL DEFAULT 'active',
-        dividend_paid BOOLEAN NOT NULL DEFAULT FALSE,
+        dividend_paid BOOLEAN NOT NULL DEFAULT 0,
         actual_div_rate DECIMAL(10,4) DEFAULT NULL,
         bank_reserved_amount DECIMAL(20,2) NOT NULL DEFAULT 0,
         branch VARCHAR(100) DEFAULT '',
@@ -291,7 +291,7 @@ function invEnsureSchema(PDO $db): void
                           h.shareholder_id,
                           h.shares,
                           h.total_invested,
-                          COALESCE(h.first_purchase_date, c.start_date, CURRENT_DATE),
+                          COALESCE(h.first_purchase_date, c.start_date, CURRENT_DATE()),
                           COALESCE(c.branch, ''),
                           NULL
                    FROM investment_holdings h
@@ -427,7 +427,7 @@ function invCurrentShareholder(PDO $db, array $staff): array
         ':br' => $branch,
         ':sid' => $staffId
     ]);
-    $id = (int)$db->lastInsertId('investment_shareholders_id_seq');
+    $id = (int)$db->lastInsertId();
     $sel = $db->prepare("SELECT * FROM investment_shareholders WHERE id = :id");
     $sel->execute([':id' => $id]);
     return (array)$sel->fetch(PDO::FETCH_ASSOC);
@@ -438,8 +438,8 @@ function invRecomputeCycleStatus(PDO $db): void
     $db->prepare("UPDATE investment_cycles
                   SET status = CASE
                     WHEN status = 'cancelled' THEN 'cancelled'
-                    WHEN end_date < CURRENT_DATE THEN 'completed'
-                    WHEN start_date <= CURRENT_DATE AND end_date >= CURRENT_DATE THEN 'active'
+                    WHEN end_date < CURRENT_DATE() THEN 'completed'
+                    WHEN start_date <= CURRENT_DATE() AND end_date >= CURRENT_DATE() THEN 'active'
                     ELSE status
                   END")
        ->execute();
@@ -939,7 +939,7 @@ if ($method === 'POST' && $id === 'shareholders') {
                ':phone' => $phone,
                ':br' => $branch
            ]);
-        $sid = (int)$db->lastInsertId('investment_shareholders_id_seq');
+        $sid = (int)$db->lastInsertId();
 
         if ($shares > 0) {
             invEnsureOperatingAccountArtifacts($db);
@@ -1092,7 +1092,7 @@ if ($method === 'POST' && $id === 'cycles' && $sub === '') {
                ':br' => $branch,
                ':uid' => $staffId
            ]);
-        $cid = (int)$db->lastInsertId('investment_cycles_id_seq');
+        $cid = (int)$db->lastInsertId();
 
         $db->prepare("INSERT INTO investment_transactions
                       (txn_ref, txn_date, shareholder_id, cycle_id, action, shares, amount, description, branch, created_by)

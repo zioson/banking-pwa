@@ -117,7 +117,7 @@ switch ($method) {
         // ── GET /api/branches/stats ──
         if ($id === 'stats') {
             // Branch isolation: non-admin only sees their assigned branches
-            $isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
+            $isAdmin = (strtoupper($staff['role'] ?? '') === 'ADMIN');
             $branchFilterClause = '';
             $branchFilterParams = [];
             if (!$isAdmin) {
@@ -305,7 +305,7 @@ switch ($method) {
         $where  = buildWhere($_GET, ['status', 'region'], [], $params);
 
         // ── Branch isolation: non-admin only sees their assigned branches ──
-        $isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
+        $isAdmin = (strtoupper($staff['role'] ?? '') === 'ADMIN');
         if (!$isAdmin) {
             $userBranchNames = [];
             try {
@@ -422,7 +422,7 @@ switch ($method) {
                 $bindParams = [$code, $name, $region, $country ?: 'CM', $status, $address, $phone, $manager];
                 if (!empty($openedDate)) $bindParams[] = $openedDate;
                 $stmt->execute($bindParams);
-                $newId = (int)$db->lastInsertId('branches_id_seq');
+                $newId = (int)$db->lastInsertId();
 
                 $rowStmt = $db->prepare("SELECT * FROM branches WHERE id = ?");
                 $rowStmt->execute([$newId]);

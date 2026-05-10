@@ -209,7 +209,7 @@ switch ($method) {
                 $db = getDB();
                 $stmt = $db->prepare('INSERT INTO audit_logs (uuid, actor, actor_branch, action, entity, entity_id, result, ip, details, module, category, user_agent, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())');
                 $stmt->execute([$uuid, $actor, $branch, $action, $entity, $eid, $result, $ip, $detail, $module, $cat, mb_substr($ua, 0, 500)]);
-                successResponse(['id' => (int)$db->lastInsertId('audit_logs_id_seq'), 'uuid' => $uuid]);
+                successResponse(['id' => (int)$db->lastInsertId(), 'uuid' => $uuid]);
             } catch (PDOException $e) {
                 // Fire-and-forget — never block the UI for audit logging
                 errorResponse('OK', 200);
@@ -241,7 +241,7 @@ switch ($method) {
                 $db = getDB();
                 $stmt = $db->prepare('INSERT INTO audit_findings (severity, category, description, recommendation, branch, status, assignee, created_date, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_DATE, ?)');
                 $stmt->execute([$severity, $category, $description, $recommendation, $branch, 'OPEN', $assignee, $operatorName]);
-                $newId = (int)$db->lastInsertId('audit_findings_id_seq');
+                $newId = (int)$db->lastInsertId();
                 $row = $db->prepare('SELECT * FROM audit_findings WHERE id = :id');
                 $row->execute([':id' => $newId]);
                 $created = $row->fetch(PDO::FETCH_ASSOC);
@@ -382,7 +382,7 @@ function buildAuditDashboard(array $staff): array {
     $branchSql = function(string $column, array &$params) use ($staffBranches, $clientBranch, $role): string {
         return applyBranchFilter($staffBranches, $clientBranch, $params, $role, $column);
     };
-    $scopeBranch = $clientBranch ?: ((in_array(strtoupper($role), ['ADMIN', 'SUPER_ADMIN'])) ? 'ALL' : (count($staffBranches) === 1 ? $staffBranches[0] : 'ALL_MY_BRANCHES'));
+    $scopeBranch = $clientBranch ?: ((strtoupper($role) === 'ADMIN') ? 'ALL' : (count($staffBranches) === 1 ? $staffBranches[0] : 'ALL_MY_BRANCHES'));
 
     // ── 1. Basic counts ── NOTE: Must use fetchColumn() because PDO default mode is FETCH_ASSOC,
     //    so fetch()[0] would return null on associative arrays. fetchColumn() returns the

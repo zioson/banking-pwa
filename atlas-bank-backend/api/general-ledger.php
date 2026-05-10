@@ -42,25 +42,25 @@ function ensureGeneralLedgerTable(PDO $db): void {
     $db->exec("CREATE INDEX IF NOT EXISTS idx_transaction_type ON general_ledger (transaction_type)");
 
     // Safe migration: add transaction_type column if missing (for existing installations)
-    $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'general_ledger' AND column_name = 'transaction_type'")->fetch();
+    $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'transaction_type'")->fetch();
     if (!$col) {
         $db->exec("ALTER TABLE general_ledger ADD COLUMN transaction_type VARCHAR(50) DEFAULT ''");
         $db->exec("CREATE INDEX IF NOT EXISTS idx_transaction_type ON general_ledger (transaction_type)");
     }
     // Safe migration: add contra_account column if missing
-    $col2 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'general_ledger' AND column_name = 'contra_account'")->fetch();
+    $col2 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'contra_account'")->fetch();
     if (!$col2) {
         $db->exec("ALTER TABLE general_ledger ADD COLUMN contra_account VARCHAR(50) DEFAULT ''");
     } else {
         // ★ Widen contra_account if it was created as VARCHAR(10) — some GL codes like '1400' are fine,
         // but descriptions like 'Operating Fund - Bank' need more space
-        $colType = $db->query("SELECT column_name, data_type AS Type, character_maximum_length FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'general_ledger' AND column_name = 'contra_account'")->fetch();
+        $colType = $db->query("SELECT column_name, data_type AS Type, character_maximum_length FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'contra_account'")->fetch();
         if ($colType && $colType['character_maximum_length'] !== null && (int)$colType['character_maximum_length'] <= 10) {
             $db->exec('ALTER TABLE general_ledger ALTER COLUMN contra_account TYPE VARCHAR(50)');
         }
     }
     // ★ Safe migration: add branch column if missing (for branch-level GL filtering)
-    $col3 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'general_ledger' AND column_name = 'branch'")->fetch();
+    $col3 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'branch'")->fetch();
     if (!$col3) {
         $db->exec("ALTER TABLE general_ledger ADD COLUMN branch VARCHAR(100) DEFAULT ''");
         $brIdx = $db->query("SELECT indexname FROM pg_indexes WHERE tablename = 'general_ledger' AND indexname = 'idx_branch'")->fetch();
@@ -98,7 +98,7 @@ function ensureChartOfAccounts(PDO $db): void {
         type VARCHAR(20) NOT NULL,
         category VARCHAR(100),
         description TEXT,
-        is_active BOOLEAN DEFAULT TRUE
+        is_active BOOLEAN DEFAULT 1
     )");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_code ON chart_of_accounts (code)");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_type ON chart_of_accounts (type)");
@@ -470,7 +470,7 @@ switch ($method) {
                 }
             }
             if ($inputBranch !== '') {
-                if (!hasBranchAccess($inputBranch, $staff)) {
+                if (!hasBranchAccess($staff, $inputBranch)) {
                     errorResponse('Access denied: you do not have branch access for this posting.', 403);
                     break;
                 }
@@ -545,13 +545,13 @@ switch ($method) {
                 )");
 
                 // ★ Safe migration: add contra_account and transaction_type columns if missing
-                $ftCol1 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'operating_account_transactions' AND column_name = 'contra_account'")->fetch();
+                $ftCol1 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'operating_account_transactions' AND column_name = 'contra_account'")->fetch();
                 if (!$ftCol1) { $db->exec("ALTER TABLE operating_account_transactions ADD COLUMN contra_account VARCHAR(100) DEFAULT ''"); }
-                $ftCol2 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'operating_account_transactions' AND column_name = 'transaction_type'")->fetch();
+                $ftCol2 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'operating_account_transactions' AND column_name = 'transaction_type'")->fetch();
                 if (!$ftCol2) { $db->exec("ALTER TABLE operating_account_transactions ADD COLUMN transaction_type VARCHAR(50) DEFAULT ''"); }
 
                 // ★ Safe migration: add branch column to operating_account_transactions
-                $ftCol3 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'operating_account_transactions' AND column_name = 'branch'")->fetch();
+                $ftCol3 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'operating_account_transactions' AND column_name = 'branch'")->fetch();
                 if (!$ftCol3) { $db->exec("ALTER TABLE operating_account_transactions ADD COLUMN branch VARCHAR(100) DEFAULT ''"); }
 
                 // ★ Backfill branch on existing operating_account_transactions from staff records
@@ -560,12 +560,11 @@ switch ($method) {
                     if ((int)$opOrphans['c'] > 0) {
                         // All op txns were posted by staff — set branch to the first admin's branch
                         // since we can't trace individual operators. Use a default branch approach.
-                        $defaultBranch = $db->query("SELECT COALESCE(NULLIF(branch,''), department, '') FROM staff WHERE role IN ('ADMIN','MANAGER','ACCOUNTANT') LIMIT 1")->fetchColumn();
+                        $defaultBranch = $db->query("SELECT COALESCE(NULLIF(sb.branch_name,''), s.department, '') FROM staff s LEFT JOIN staff_branches sb ON s.id = sb.staff_id WHERE s.role IN ('ADMIN','MANAGER','ACCOUNTANT') AND s.employment_status = 'ACTIVE' LIMIT 1")->fetchColumn();
                         if ($defaultBranch) {
-                            $opBackfilled = $db->exec(
-                                "UPDATE operating_account_transactions SET branch = ? WHERE (branch IS NULL OR branch = '')",
-                                [$defaultBranch]
-                            );
+                            $opBfStmt = $db->prepare("UPDATE operating_account_transactions SET branch = ? WHERE (branch IS NULL OR branch = '')");
+                            $opBfStmt->execute([$defaultBranch]);
+                            $opBackfilled = $opBfStmt->rowCount();
                             if ($opBackfilled > 0) {
                                 error_log('[GL Migration] Backfilled branch on ' . $opBackfilled . ' operating_account_transactions.');
                             }

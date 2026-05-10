@@ -38,9 +38,9 @@ if ($method === 'POST') {
  * Safely add a column if it doesn't exist (MySQL/MariaDB compatible)
  */
 function lfAddCol(PDO $db, string $table, string $col, string $def): void {
-    $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ? AND column_name = ?");
+    $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_name = ? AND column_name = ?");
     $r->execute([$table, $col]);
-    if (!$r->fetch()) $db->exec("ALTER TABLE \"$table\" ADD COLUMN \"$col\" $def");
+    if (!$r) $db->exec("ALTER TABLE $table ADD COLUMN $col $def");
 }
 
 function lfNormalizeBranches(array $branches): array {
@@ -54,7 +54,7 @@ function lfNormalizeBranches(array $branches): array {
 function lfCanAccessBranch(array $staff, string $branch): bool {
     $branch = strtoupper(trim($branch));
     if ($branch === '') return true;
-    if (in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN'])) return true;
+    if (strtoupper($staff['role'] ?? '') === 'ADMIN') return true;
     $staffBranches = lfNormalizeBranches($staff['branches'] ?? []);
     if (in_array('ALL', $staffBranches, true)) return true;
     return empty($staffBranches) ? false : in_array($branch, $staffBranches, true);
@@ -87,7 +87,7 @@ function lfEnsureSchema(PDO $db): void {
     lfAddCol($db, 'general_ledger', 'transaction_type', "VARCHAR(50) DEFAULT ''");
     lfAddCol($db, 'general_ledger', 'contra_account', "VARCHAR(50) DEFAULT ''");
     lfAddCol($db, 'general_ledger', 'branch', "VARCHAR(100) DEFAULT ''");
-    $brIdx = $db->query("SELECT indexname FROM pg_indexes WHERE tablename = 'general_ledger' AND indexname = 'idx_branch'")->fetch();
+    $brIdx = $db->query("SELECT indexname FROM pg_indexes WHERE tablename = 'general_ledger' WHERE indexname = 'idx_branch'")->fetch();
     if (!$brIdx) {
         $db->exec("CREATE INDEX IF NOT EXISTS idx_branch ON general_ledger (branch)");
     }
@@ -100,7 +100,7 @@ function lfEnsureSchema(PDO $db): void {
         type VARCHAR(20) NOT NULL,
         category VARCHAR(100),
         description TEXT,
-        is_active BOOLEAN DEFAULT TRUE
+        is_active BOOLEAN DEFAULT 1
     )");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_code ON chart_of_accounts (code)");
 
@@ -567,7 +567,7 @@ switch ($method) {
             if ($requestedBranch !== '' && !lfCanAccessBranch($staff, $requestedBranch)) {
                 errorResponse('Access denied. You cannot view loan-fund activity for a branch outside your assignment.', 403);
             }
-            $effectiveBranches = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN'])
+            $effectiveBranches = strtoupper($staff['role'] ?? '') === 'ADMIN'
                 ? []
                 : lfNormalizeBranches($staff['branches'] ?? []);
             if (in_array('ALL', $effectiveBranches, true)) {
@@ -755,7 +755,7 @@ switch ($method) {
                             $staff['department'] ?? '', getClientIp());
 
                         successResponse([
-                            'id' => $db->lastInsertId('loan_fund_transactions_id_seq'), 'ref' => $ref,
+                            'id' => $db->lastInsertId(), 'ref' => $ref,
                             'accountNumber' => $accountNumber, 'type' => $type,
                             'amount' => $amount,
                             'balanceAfter' => $currentGLBalance,  // Unchanged
@@ -898,7 +898,7 @@ switch ($method) {
                             $staff['department'] ?? '', getClientIp());
 
                         successResponse([
-                            'id' => $db->lastInsertId('loan_fund_transactions_id_seq'), 'ref' => $ref,
+                            'id' => $db->lastInsertId(), 'ref' => $ref,
                             'accountNumber' => $accountNumber, 'type' => $type,
                             'amount' => $amount,
                             'balanceAfter' => $newGLBalance,
@@ -951,7 +951,7 @@ switch ($method) {
                             $staff['department'] ?? '', getClientIp());
 
                         successResponse([
-                            'id' => $db->lastInsertId('loan_fund_transactions_id_seq'), 'ref' => $ref,
+                            'id' => $db->lastInsertId(), 'ref' => $ref,
                             'accountNumber' => $accountNumber, 'type' => $type,
                             'amount' => $amount,
                             'balanceAfter' => $newGLBalance,
@@ -1031,7 +1031,7 @@ switch ($method) {
                             $staff['department'] ?? '', getClientIp());
 
                         successResponse([
-                            'id' => $db->lastInsertId('loan_fund_transactions_id_seq'), 'ref' => $ref,
+                            'id' => $db->lastInsertId(), 'ref' => $ref,
                             'accountNumber' => $accountNumber, 'type' => $type,
                             'amount' => $amount,
                             'balanceAfter' => $newBalance,
@@ -1063,7 +1063,7 @@ switch ($method) {
                             $staff['department'] ?? '', getClientIp());
 
                         successResponse([
-                            'id' => $db->lastInsertId('loan_fund_transactions_id_seq'), 'ref' => $ref,
+                            'id' => $db->lastInsertId(), 'ref' => $ref,
                             'accountNumber' => $accountNumber, 'type' => $type,
                             'amount' => $amount,
                             'balanceAfter' => $newBalance,

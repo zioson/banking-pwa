@@ -132,7 +132,7 @@ switch ($method) {
                 ':etype'  => $entityType,
                 ':eid'    => $entityId
             ]);
-            $newId = $db->lastInsertId('notifications_id_seq');
+            $newId = $db->lastInsertId();
             $notifStmt = $db->prepare('SELECT * FROM notifications WHERE id = :id');
             $notifStmt->execute([':id' => $newId]);
             $notif = $notifStmt->fetch();

@@ -64,11 +64,8 @@ if ($id === 'me') {
 $db = getDB();
 
 // ── Auto-create/enrich tables ──
-// ★ FIX: Changed id from INTEGER NOT NULL to SERIAL PRIMARY KEY for PostgreSQL.
-// Previously used MySQL-style INTEGER NOT NULL with AUTO_INCREMENT, which doesn't
-// work in PostgreSQL. SERIAL creates an auto-incrementing sequence automatically.
 $db->exec("CREATE TABLE IF NOT EXISTS staff (
-    id                    SERIAL PRIMARY KEY,
+    id                    INTEGER NOT NULL,
     username              VARCHAR(100) NOT NULL,
     full_name             VARCHAR(255) NOT NULL,
     initials              VARCHAR(10)  DEFAULT '',
@@ -79,7 +76,7 @@ $db->exec("CREATE TABLE IF NOT EXISTS staff (
     department            VARCHAR(100) NOT NULL DEFAULT 'Operations',
     password_hash         TEXT         NOT NULL,
     salt                  VARCHAR(128) DEFAULT '',
-    mfa_required          BOOLEAN   NOT NULL DEFAULT TRUE,
+    mfa_required          BOOLEAN   NOT NULL DEFAULT 1,
     mfa_secret            VARCHAR(255) DEFAULT '',
     employment_status     VARCHAR(20)  NOT NULL DEFAULT 'ACTIVE',
     approval_limit        DECIMAL(15,2) NOT NULL DEFAULT 0.00,
@@ -87,55 +84,42 @@ $db->exec("CREATE TABLE IF NOT EXISTS staff (
     last_login            TIMESTAMP    NULL DEFAULT NULL,
     last_login_ip         VARCHAR(45)  DEFAULT '',
     failed_login_attempts INTEGER NOT NULL DEFAULT 0,
-    account_locked        BOOLEAN   NOT NULL DEFAULT FALSE,
+    account_locked        BOOLEAN   NOT NULL DEFAULT 0,
     locked_until          TIMESTAMP    NULL DEFAULT NULL,
-    force_password_change BOOLEAN   NOT NULL DEFAULT FALSE,
+    force_password_change BOOLEAN   NOT NULL DEFAULT 0,
     password_changed_at   TIMESTAMP    NULL DEFAULT NULL,
     created_at            TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     updated_at            TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
     UNIQUE (username)
 )");
-// ★ FIX: Ensure sequence exists for staff.id (migration for tables created with old schema).
-// If the table was created with `id INTEGER NOT NULL`, there's no auto-increment sequence.
-// This creates one if missing, using COALESCE(MAX(id),0)+1 as the start value.
-try {
-    $seqCheck = $db->query("SELECT COUNT(*) FROM pg_sequences WHERE schemaname = current_schema() AND sequencename = 'staff_id_seq'")->fetchColumn();
-    if (!$seqCheck) {
-        $maxId = (int)$db->query("SELECT COALESCE(MAX(id),0) FROM staff")->fetchColumn();
-        $db->exec("CREATE SEQUENCE IF NOT EXISTS staff_id_seq START " . ($maxId + 1));
-        $db->exec("ALTER TABLE staff ALTER COLUMN id SET DEFAULT nextval('staff_id_seq')");
-        $db->exec("ALTER SEQUENCE staff_id_seq OWNED BY staff.id");
-    }
-} catch (PDOException $e) {
-    error_log('[Staff Schema] Sequence migration failed (may already exist): ' . $e->getMessage());
-}
 try { $db->exec('CREATE INDEX IF NOT EXISTS idx_staff_role ON staff (role)'); } catch (PDOException $e) {}
 try { $db->exec('CREATE INDEX IF NOT EXISTS idx_staff_department ON staff (department)'); } catch (PDOException $e) {}
 try { $db->exec('CREATE INDEX IF NOT EXISTS idx_staff_status ON staff (employment_status)'); } catch (PDOException $e) {}
 
 // ── Migration: Add missing columns for existing installations ──
 try {
-    $cols = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff' AND column_name = 'force_password_change'")->fetchAll();
+    $cols = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'staff' AND column_name = 'force_password_change'")->fetchAll();
     if (empty($cols)) {
-        $db->exec("ALTER TABLE staff ADD COLUMN force_password_change BOOLEAN NOT NULL DEFAULT FALSE");
+        $db->exec("ALTER TABLE staff ADD COLUMN force_password_change BOOLEAN NOT NULL DEFAULT 0");
     }
-    $cols2 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff' AND column_name = 'password_changed_at'")->fetchAll();
+    $cols2 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'staff' AND column_name = 'password_changed_at'")->fetchAll();
     if (empty($cols2)) {
         $db->exec("ALTER TABLE staff ADD COLUMN password_changed_at TIMESTAMP NULL DEFAULT NULL");
     }
-    $cols3 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff' AND column_name = 'timezone'")->fetchAll();
+    $cols3 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'staff' AND column_name = 'timezone'")->fetchAll();
     if (empty($cols3)) {
         $db->exec("ALTER TABLE staff ADD COLUMN timezone VARCHAR(50) DEFAULT 'Africa/Douala'");
     }
-    $cols4 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff' AND column_name = 'locale'")->fetchAll();
+    $cols4 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'staff' AND column_name = 'locale'")->fetchAll();
     if (empty($cols4)) {
         $db->exec("ALTER TABLE staff ADD COLUMN locale VARCHAR(10) DEFAULT 'en'");
     }
-    $cols5 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff' AND column_name = 'notifications_enabled'")->fetchAll();
+    $cols5 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'staff' AND column_name = 'notifications_enabled'")->fetchAll();
     if (empty($cols5)) {
-        $db->exec("ALTER TABLE staff ADD COLUMN notifications_enabled BOOLEAN NOT NULL DEFAULT TRUE");
+        $db->exec("ALTER TABLE staff ADD COLUMN notifications_enabled BOOLEAN NOT NULL DEFAULT 1");
     }
-    $cols6 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff' AND column_name = 'profile_picture'")->fetchAll();
+    $cols6 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'staff' AND column_name = 'profile_picture'")->fetchAll();
     if (empty($cols6)) {
         $db->exec("ALTER TABLE staff ADD COLUMN profile_picture TEXT DEFAULT NULL");
     }
@@ -143,53 +127,35 @@ try {
     // Previously these were sent by the frontend but silently discarded by the backend,
     // as the staff table had no columns for them. Now they are persisted alongside
     // the status change, making them visible on the staff record itself.
-    $cols7 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff' AND column_name = 'deactivation_reason'")->fetchAll();
+    $cols7 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'staff' AND column_name = 'deactivation_reason'")->fetchAll();
     if (empty($cols7)) {
         $db->exec("ALTER TABLE staff ADD COLUMN deactivation_reason VARCHAR(500) DEFAULT NULL");
     }
-    $cols8 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff' AND column_name = 'suspension_reason'")->fetchAll();
+    $cols8 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'staff' AND column_name = 'suspension_reason'")->fetchAll();
     if (empty($cols8)) {
         $db->exec("ALTER TABLE staff ADD COLUMN suspension_reason VARCHAR(500) DEFAULT NULL");
     }
 } catch (PDOException $e) { /* Columns may already exist — safe to ignore */ }
 
 $db->exec("CREATE TABLE IF NOT EXISTS staff_branches (
-    id          SERIAL PRIMARY KEY,
+    id          INTEGER NOT NULL,
     staff_id    INTEGER NOT NULL,
     branch_name VARCHAR(255) NOT NULL,
+    PRIMARY KEY (id),
     UNIQUE (staff_id, branch_name),
     FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE
 )");
-// ★ FIX: Ensure sequence exists for staff_branches.id (migration for old schema)
-try {
-    $seqCheck = $db->query("SELECT COUNT(*) FROM pg_sequences WHERE schemaname = current_schema() AND sequencename = 'staff_branches_id_seq'")->fetchColumn();
-    if (!$seqCheck) {
-        $maxId = (int)$db->query("SELECT COALESCE(MAX(id),0) FROM staff_branches")->fetchColumn();
-        $db->exec("CREATE SEQUENCE IF NOT EXISTS staff_branches_id_seq START " . ($maxId + 1));
-        $db->exec("ALTER TABLE staff_branches ALTER COLUMN id SET DEFAULT nextval('staff_branches_id_seq')");
-        $db->exec("ALTER SEQUENCE staff_branches_id_seq OWNED BY staff_branches.id");
-    }
-} catch (PDOException $e) {}
 try { $db->exec('CREATE INDEX IF NOT EXISTS idx_sb_branch ON staff_branches (branch_name)'); } catch (PDOException $e) {}
 
 $db->exec("CREATE TABLE IF NOT EXISTS staff_modules (
-    id          SERIAL PRIMARY KEY,
+    id          INTEGER NOT NULL,
     staff_id    INTEGER NOT NULL,
     module_name VARCHAR(100) NOT NULL,
     access_level VARCHAR(20) NOT NULL DEFAULT 'FULL',
+    PRIMARY KEY (id),
     UNIQUE (staff_id, module_name),
     FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE
 )");
-// ★ FIX: Ensure sequence exists for staff_modules.id (migration for old schema)
-try {
-    $seqCheck = $db->query("SELECT COUNT(*) FROM pg_sequences WHERE schemaname = current_schema() AND sequencename = 'staff_modules_id_seq'")->fetchColumn();
-    if (!$seqCheck) {
-        $maxId = (int)$db->query("SELECT COALESCE(MAX(id),0) FROM staff_modules")->fetchColumn();
-        $db->exec("CREATE SEQUENCE IF NOT EXISTS staff_modules_id_seq START " . ($maxId + 1));
-        $db->exec("ALTER TABLE staff_modules ALTER COLUMN id SET DEFAULT nextval('staff_modules_id_seq')");
-        $db->exec("ALTER SEQUENCE staff_modules_id_seq OWNED BY staff_modules.id");
-    }
-} catch (PDOException $e) {}
 try { $db->exec('CREATE INDEX IF NOT EXISTS idx_sm_module ON staff_modules (module_name)'); } catch (PDOException $e) {}
 
 /**
@@ -290,8 +256,8 @@ function attachAssignments(PDO $db, array &$record): void {
     try {
         // Self-heal: add access_level column if it doesn't exist (backward compat)
         $cols = [];
-        foreach ($db->query("SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff_modules' ORDER BY ordinal_position")->fetchAll(PDO::FETCH_ASSOC) as $_c) {
-            $cols[strtolower($_c['column_name'])] = true;
+        foreach ($db->query("SELECT column_name AS Field, data_type AS Type FROM information_schema.columns WHERE table_name = 'staff_modules' ORDER BY ordinal_position")->fetchAll(PDO::FETCH_ASSOC) as $_c) {
+            $cols[strtolower($_c['Field'])] = true;
         }
         if (!isset($cols['access_level'])) {
             $db->exec("ALTER TABLE staff_modules ADD COLUMN access_level VARCHAR(20) NOT NULL DEFAULT 'FULL'");
@@ -324,8 +290,8 @@ function syncModules(PDO $db, int $staffId, array $modules): void {
     // Ensure access_level column exists (self-heal for existing databases)
     try {
         $cols = [];
-        foreach ($db->query("SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff_modules' ORDER BY ordinal_position")->fetchAll(PDO::FETCH_ASSOC) as $_c) {
-            $cols[strtolower($_c['column_name'])] = true;
+        foreach ($db->query("SELECT column_name AS Field, data_type AS Type FROM information_schema.columns WHERE table_name = 'staff_modules' ORDER BY ordinal_position")->fetchAll(PDO::FETCH_ASSOC) as $_c) {
+            $cols[strtolower($_c['Field'])] = true;
         }
         if (!isset($cols['access_level'])) {
             $db->exec("ALTER TABLE staff_modules ADD COLUMN access_level VARCHAR(20) NOT NULL DEFAULT 'FULL'");
@@ -555,7 +521,7 @@ switch ($method) {
         // Branch isolation: non-admin users can only see staff assigned to their branches
         // ★ FIX (SP-001): If non-admin has NO assigned branches, show NO staff (not ALL).
         // Previously, empty $userBranches meant no WHERE clause was added, leaking all staff.
-        if (!in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN'])) {
+        if (!isCurrentUserAdmin($staff)) {
             $userBranches = $staff['branches'] ?? [];
             if (!empty($userBranches)) {
                 $placeholders = array_map(function($i) { return ':ubranch_' . $i; }, array_keys($userBranches));
@@ -761,7 +727,7 @@ switch ($method) {
             ':ip'          => sanitize($input['ip_restrictions'] ?? 'Any'),
             ':force'       => 1  // Always force password change for new accounts
         ]);
-        $newId = (int)$db->lastInsertId('staff_id_seq');
+        $newId = (int)$db->lastInsertId();
 
         // Sync branch and module assignments
         if (is_array($branches)) syncBranches($db, $newId, $branches);

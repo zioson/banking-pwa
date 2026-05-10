@@ -25,7 +25,7 @@ function apprNormalizeBranches(array $branches): array {
 function apprCanAccessBranch(array $staff, string $branch): bool {
     $branch = strtoupper(trim($branch));
     if ($branch === '') return true;
-    if (in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN'])) return true;
+    if (strtoupper($staff['role'] ?? '') === 'ADMIN') return true;
     $staffBranches = apprNormalizeBranches($staff['branches'] ?? []);
     if (in_array('ALL', $staffBranches, true)) return true;
     return empty($staffBranches) ? false : in_array($branch, $staffBranches, true);
@@ -227,7 +227,7 @@ switch ($method) {
                 ':value'   => sanitize($input['value']),
                 ':details' => $detailsJson
             ]);
-            $newId = (int)$db->lastInsertId('approvals_id_seq');
+            $newId = (int)$db->lastInsertId();
             logAudit($staff['full_name'], 'APPROVAL_SUBMIT', 'APPROVAL', (string)$newId, 'SUCCESS',
                 'Submitted approval for ' . $input['entity_type'] . ' #' . $input['entity_id'],
                 $staff['department'], getClientIp());

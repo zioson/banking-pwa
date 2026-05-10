@@ -44,9 +44,8 @@ $id = $_ROUTE['id'];
  */
 function loanAddCol(PDO $db, string $table, string $col, string $def): void {
     try {
-        $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ? AND column_name = ?");
-        $r->execute([$table, $col]);
-        if (!$r->fetch()) $db->exec('ALTER TABLE "' . $table . '" ADD COLUMN "' . $col . '" ' . $def);
+        $r = $db->query("SELECT column_name AS \"Field\" FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = '$table' AND column_name = '$col'")->fetch();
+        if (!$r) $db->exec("ALTER TABLE \"$table\" ADD COLUMN \"$col\" $def");
     } catch (PDOException $e) {
         error_log("[Loans Schema] loanAddCol($table, $col) failed: " . $e->getMessage());
     }
@@ -55,7 +54,7 @@ function loanAddCol(PDO $db, string $table, string $col, string $def): void {
 function loanCanAccessBranch(array $staff, string $branch): bool {
     $branch = strtoupper(trim($branch));
     if ($branch === '') return true;
-    if (in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN'])) return true;
+    if (strtoupper($staff['role'] ?? '') === 'ADMIN') return true;
     $staffBranchesRaw = $staff['branches'] ?? [];
     if (is_string($staffBranchesRaw)) {
         $staffBranchesRaw = [$staffBranchesRaw];
@@ -214,7 +213,7 @@ function loanEnsureTransactionsCompat(PDO $db): void {
         'memo' => "TEXT DEFAULT NULL",
         'created_at' => "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
         'updated_at' => "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
-        'timestamp' => "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"
+        'timestamp' => "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
     ] as $col => $def) {
         try { loanAddCol($db, 'transactions', $col, $def); } catch (Exception $_) {}
     }
@@ -367,8 +366,8 @@ function loanEnsureSchema(PDO $db): void {
 
     // Fix repayment_mode if it's a restrictive ENUM — alter to VARCHAR
     try {
-        $col = $db->query("SELECT data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'loans' AND column_name = 'repayment_mode'")->fetch(PDO::FETCH_ASSOC);
-        if ($col && str_contains(strtolower($col['data_type']), 'enum')) {
+        $col = $db->query("SELECT column_name AS \"Field\", data_type AS \"Type\" FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'loans' AND column_name = 'repayment_mode'")->fetch();
+        if ($col && str_contains(strtolower($col['Type']), 'enum(')) {
             $db->exec("ALTER TABLE loans ALTER COLUMN repayment_mode TYPE VARCHAR(30)");
             $db->exec("ALTER TABLE loans ALTER COLUMN repayment_mode SET DEFAULT 'SCHEDULED'");
         }
@@ -378,9 +377,11 @@ function loanEnsureSchema(PDO $db): void {
 
     // Fix status ENUM if it doesn't include newer statuses
     try {
-        $col2 = $db->query("SELECT data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'loans' AND column_name = 'status'")->fetch(PDO::FETCH_ASSOC);
-        if ($col2 && str_contains(strtolower($col2['data_type']), 'enum')) {
-            $db->exec("ALTER TABLE loans ALTER COLUMN status TYPE VARCHAR(30)");
+        $col2 = $db->query("SELECT column_name AS \"Field\", data_type AS \"Type\" FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'loans' AND column_name = 'status'")->fetch();
+        if ($col2 && str_contains(strtolower($col2['Type']), 'enum(')) {
+            if (!str_contains($col2['Type'], "'UNDER_REVIEW'")) {
+                $db->exec("ALTER TABLE loans ALTER COLUMN status TYPE VARCHAR(30)");
+            }
         }
     } catch (PDOException $e) {
         error_log("[Loans Schema] ALTER status failed: " . $e->getMessage());
@@ -410,9 +411,11 @@ function loanEnsureSchema(PDO $db): void {
 
     // Fix schedule status ENUM if restrictive — ensure it includes UPCOMING, PARTIALLY_PAID and WAIVED
     try {
-        $schCol = $db->query("SELECT data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'loan_schedule' AND column_name = 'status'")->fetch(PDO::FETCH_ASSOC);
-        if ($schCol && str_contains(strtolower($schCol['data_type']), 'enum')) {
-            $db->exec("ALTER TABLE loan_schedule ALTER COLUMN status TYPE VARCHAR(30)");
+        $schCol = $db->query("SELECT column_name AS \"Field\", data_type AS \"Type\" FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'loan_schedule' AND column_name = 'status'")->fetch();
+        if ($schCol && str_contains(strtolower($schCol['Type']), 'enum(')) {
+            if (!str_contains($schCol['Type'], 'UPCOMING')) {
+                $db->exec("ALTER TABLE loan_schedule ALTER COLUMN status TYPE VARCHAR(30)");
+            }
         }
     } catch (PDOException $e) {
         error_log("[Loans Schema] ALTER loan_schedule status failed: " . $e->getMessage());
@@ -2098,7 +2101,7 @@ switch ($method) {
                 ':guarantor_account_number' => $guarantorAccountNumber,
                 ':created_by' => (int)($staff['id'] ?? 0)
             ]);
-            $newId = (int)$db->lastInsertId('loans_id_seq');
+            $newId = (int)$db->lastInsertId();
 
             logAudit($staff['full_name'], 'LOAN_CREATE', 'LOAN', (string)$newId, 'SUCCESS', 'Created loan ' . $loanNum, $staff['department'], getClientIp());
             createdResponse(['id' => $newId, 'loan_number' => $loanNum], 'Loan created successfully.');

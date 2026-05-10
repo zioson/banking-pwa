@@ -252,7 +252,7 @@ switch ($method) {
                 // ★ FIX (CUST-011): Apply branch isolation to single-customer GET
                 // Prevents staff from viewing customer details from other branches.
                 $role = strtoupper((string)($staff['role'] ?? ''));
-                if (!in_array($role, ['ADMIN', 'SUPER_ADMIN'], true)) {
+                if ($role !== 'ADMIN') {
                     $staffBranchesRaw = $staff['branches'] ?? [];
                     if (is_string($staffBranchesRaw)) {
                         $staffBranchesRaw = [$staffBranchesRaw];
@@ -362,7 +362,7 @@ switch ($method) {
                 ':next_action' => sanitize($input['next_action'] ?? ''),
                 ':notes'  => sanitize($input['notes'] ?? ''),
             ]);
-            $newId = (int)$db->lastInsertId('customers_id_seq');
+            $newId = (int)$db->lastInsertId();
 
             // ── Save requested products ──
             $rawProducts = is_array($input['products'] ?? null) ? $input['products'] : [];

@@ -38,14 +38,14 @@ define('GL_MISC_EXPENSE',       '5900');   // Miscellaneous Expense (Expense)
 function ensureOpFundColumns(PDO $db): void {
     $cols = ['description', 'source_type', 'source_ref', 'category', 'gl_code', 'branch'];
     foreach ($cols as $col) {
-        $check = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'operating_account_transactions' AND column_name = '$col'")->fetch();
+        $check = $db->query("SELECT column_name FROM information_schema.columns WHERE table_name = 'operating_account_transactions' AND column_name = '$col'")->fetch();
         if (!$check) {
             $type = ($col === 'description') ? 'TEXT' : "VARCHAR(100) DEFAULT NULL";
-            $db->exec("ALTER TABLE \"operating_account_transactions\" ADD COLUMN \"$col\" $type");
+            $db->exec("ALTER TABLE operating_account_transactions ADD COLUMN $col $type");
         }
     }
     // Safe migration: add branch index for filtered queries
-    $brIdx = $db->query("SELECT indexname FROM pg_indexes WHERE tablename = 'operating_account_transactions' AND indexname = 'idx_oat_branch'")->fetch();
+    $brIdx = $db->query("SELECT indexname FROM pg_indexes WHERE tablename = 'operating_account_transactions' WHERE indexname = 'idx_oat_branch'")->fetch();
     if (!$brIdx) {
         $db->exec("CREATE INDEX IF NOT EXISTS idx_oat_branch ON operating_account_transactions (branch)");
     }
@@ -84,21 +84,23 @@ function ensureGeneralLedgerTable(PDO $db): void {
 function ensureGeneralLedgerColumns(PDO $db): void {
     // transaction_type — categorises the source operation
     $colTransactionType = $db->query(
-        "SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'general_ledger' AND column_name = 'transaction_type'"
+        "SELECT column_name FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'transaction_type'"
     )->fetch();
     if (!$colTransactionType) {
         $db->exec(
-            "ALTER TABLE \"general_ledger\" ADD COLUMN \"transaction_type\" VARCHAR(50) DEFAULT NULL"
+            "ALTER TABLE general_ledger ADD COLUMN \"transaction_type\" VARCHAR(50) DEFAULT NULL "
+          . "COMMENT 'Source operation type, e.g. OP_FUND_CREDIT, OP_FUND_DEBIT, OP_FUND_TRANSFER'"
         );
     }
 
     // contra_account — the other leg of the double-entry pair
     $colContraAccount = $db->query(
-        "SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'general_ledger' AND column_name = 'contra_account'"
+        "SELECT column_name FROM information_schema.columns WHERE table_name = 'general_ledger' AND column_name = 'contra_account'"
     )->fetch();
     if (!$colContraAccount) {
         $db->exec(
-            "ALTER TABLE \"general_ledger\" ADD COLUMN \"contra_account\" VARCHAR(20) DEFAULT NULL"
+            "ALTER TABLE general_ledger ADD COLUMN \"contra_account\" VARCHAR(20) DEFAULT NULL "
+          . "COMMENT 'The paired account_code for this double-entry line'"
         );
     }
 }
@@ -118,7 +120,7 @@ function ensureChartOfAccounts(PDO $db): void {
             account_name VARCHAR(200) NOT NULL,
             account_type VARCHAR(20) NOT NULL,
             description TEXT,
-            is_active BOOLEAN DEFAULT TRUE,
+            is_active BOOLEAN DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE (account_code)
         )");
@@ -348,7 +350,7 @@ switch ($method) {
 
             // Also attach the real-time GL balance for account 1400
             // ★ FIX (OP-FUND-011): Apply branch filtering for non-admin users
-            $_isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
+            $_isAdmin = strtoupper($staff['role'] ?? '') === 'ADMIN';
             $branchScope = $_isAdmin ? null : ($staff['branches'] ?? null);
             $glBalance = getGL1400Balance($db, $branchScope);
             $summary['gl_1400_balance'] = $glBalance;
@@ -402,7 +404,7 @@ switch ($method) {
                 $account = getDefaultOpAccount($db);
 
                 // ★ FIX (OP-FUND-011): Use branch scope for balance check
-                $_isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
+                $_isAdmin = strtoupper($staff['role'] ?? '') === 'ADMIN';
                 $branchScope = $_isAdmin ? null : ($staff['branches'] ?? null);
 
                 $currentGLBalance = getGL1400Balance($db, $branchScope);
@@ -472,7 +474,7 @@ switch ($method) {
                     . ' [GL: DR 1400 + CR 3100]',
                     $staff['department'], getClientIp());
                 createdResponse([
-                    'id' => (int)$db->lastInsertId('operating_account_transactions_id_seq'),
+                    'id' => (int)$db->lastInsertId(),
                     'ref' => $ref,
                     'balance' => $opBalance,
                     'gl_1400_balance' => $newBalance,
@@ -500,7 +502,7 @@ switch ($method) {
                 // ── Balance check from GL 1400 (source of truth) BEFORE beginTransaction ──
                 // This avoids leaking an open transaction on error.
                 // ★ FIX (OP-FUND-011): Use branch scope for balance check
-                $_isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
+                $_isAdmin = strtoupper($staff['role'] ?? '') === 'ADMIN';
                 $branchScope = $_isAdmin ? null : ($staff['branches'] ?? null);
                 $currentGLBalance = getGL1400Balance($db, $branchScope);
 
@@ -579,7 +581,7 @@ switch ($method) {
                     . ' [GL: CR 1400 + DR 5900]',
                     $staff['department'], getClientIp());
                 createdResponse([
-                    'id' => (int)$db->lastInsertId('operating_account_transactions_id_seq'),
+                    'id' => (int)$db->lastInsertId(),
                     'ref' => $ref,
                     'balance' => $newOpBalance,
                     'gl_1400_balance' => $newGLBalance,
@@ -606,7 +608,7 @@ switch ($method) {
 
                 // ── Balance check from GL 1400 (source of truth) BEFORE beginTransaction ──
                 // ★ FIX (OP-FUND-011): Use branch scope for balance check
-                $_isAdmin = in_array(strtoupper($staff['role'] ?? ''), ['ADMIN', 'SUPER_ADMIN']);
+                $_isAdmin = strtoupper($staff['role'] ?? '') === 'ADMIN';
                 $branchScope = $_isAdmin ? null : ($staff['branches'] ?? null);
                 $currentGLBalance = getGL1400Balance($db, $branchScope);
 
@@ -685,7 +687,7 @@ switch ($method) {
                     . ' [GL: DR ' . $toGl . ' + CR 1400]',
                     $staff['department'], getClientIp());
                 createdResponse([
-                    'id' => (int)$db->lastInsertId('operating_account_transactions_id_seq'),
+                    'id' => (int)$db->lastInsertId(),
                     'ref' => $ref,
                     'balance' => $newOpBalance,
                     'gl_1400_balance' => $newGLBalance,
