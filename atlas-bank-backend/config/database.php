@@ -31,12 +31,8 @@ namespace {
         $debugEnv = getenv('APP_DEBUG');
         $debugFromEnv = $debugEnv !== false
             && in_array(strtolower((string)$debugEnv), ['1', 'true', 'yes', 'on'], true);
-        // ★ FIX: Force debug OFF in production regardless of env var
-        if (strtolower(APP_ENV) === 'production') {
-            define('APP_DEBUG', false);
-        } else {
-            define('APP_DEBUG', $debugEnv !== false ? $debugFromEnv : APP_ENV === 'development');
-        }
+        // Fail safe: production never exposes debug details, even if debug is accidentally enabled.
+        define('APP_DEBUG', APP_ENV === 'production' ? false : ($debugEnv !== false ? $debugFromEnv : APP_ENV === 'development'));
     }
 
     if (!defined('SESSION_LIFETIME')) {

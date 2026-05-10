@@ -7,7 +7,7 @@ class Cors
 {
     /**
      * Allowed origins for CORS requests.
-     * Read from environment variable; defaults to wildcard.
+     * Read from environment variable; defaults to safe localhost origins.
      *
      * @var array<int, string>
      */
@@ -79,7 +79,7 @@ class Cors
 
         self::$headersSent = true;
 
-        $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '*';
+        $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
         // Resolve the origin header value
         $originValue = self::resolveOrigin($requestOrigin);
@@ -128,16 +128,32 @@ class Cors
      */
     private static function resolveOrigin(string $requestOrigin): string
     {
-        // No specific origins configured — allow all
+        // No specific origins configured — allow only local development origins.
         if (empty(self::$allowedOrigins)) {
-            return '*';
+            $safeDevOrigins = [
+                'http://localhost', 'http://127.0.0.1',
+                'http://localhost:8000', 'http://127.0.0.1:8000',
+                'http://localhost:3000', 'http://127.0.0.1:3000',
+                'http://localhost:5173', 'http://127.0.0.1:5173',
+            ];
+            if (in_array($requestOrigin, $safeDevOrigins, true)) {
+                return $requestOrigin;
+            }
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Origin not allowed.'], JSON_THROW_ON_ERROR);
+            exit(1);
         }
 
         // Normalize and check whitelist
         $normalized = strtolower(trim($requestOrigin));
 
         foreach (self::$allowedOrigins as $allowed) {
-            if (strtolower(trim($allowed)) === $normalized) {
+            $allowed = trim((string)$allowed);
+            if ($allowed === '*') {
+                // Wildcard is incompatible with credentialed banking sessions; never reflect arbitrary origins.
+                continue;
+            }
+            if (strtolower($allowed) === $normalized) {
                 return $requestOrigin;
             }
         }
