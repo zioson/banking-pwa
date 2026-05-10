@@ -638,10 +638,8 @@ function applyBranchFilter(array $staffBranches, string $clientBranch, array &$p
     // Build SQL fragment with double-quote protection only for simple column names (no dots)
     $safeColumn = (strpos($columnName, '.') !== false) ? $columnName : '"' . $columnName . '"';
 
-    // ★ FIXED: Admin and SUPER_ADMIN always bypass branch filtering unless they
-    // explicitly request a specific branch. These roles have enterprise-wide access.
-    $roleUpper = strtoupper($role);
-    if (in_array($roleUpper, ['ADMIN', 'SUPER_ADMIN'], true)) {
+    // ★ FIXED (SEC-AUDIT-001): Admins and Super Admins always bypass branch filtering unless they explicitly request one.
+    if (in_array(strtoupper($role), ['ADMIN', 'SUPER_ADMIN'], true)) {
         if (!empty($clientBranch)) {
             $params[':bf_admin_req'] = $clientBranch;
             return " AND $safeColumn = :bf_admin_req";
@@ -673,19 +671,9 @@ function applyBranchFilter(array $staffBranches, string $clientBranch, array &$p
         }
         return '';
     }
-
-    // ★ FIXED: If the user has no assigned branches but holds a privileged role that
-    // wasn't caught above (e.g., MANAGER, ACCOUNTANT with enterprise-wide read access),
-    // treat empty branches as "ALL" when a specific branch filter is requested — this
-    // prevents the GL panel from returning zero results when the branch dropdown is used.
     if (empty($staffBranchesNorm)) {
-        if (!empty($clientBranch)) {
-            // User requested a specific branch — allow it (read-only filter, not a security gate)
-            $params[':bf_nobranch_req'] = $clientBranch;
-            return " AND $safeColumn = :bf_nobranch_req";
-        }
-        // No branches assigned and no filter requested — return all (no WHERE restriction)
-        return '';
+        $params[':bf_deny'] = '__IMPOSSIBLE_BRANCH__';
+        return " AND $safeColumn = :bf_deny";
     }
 
     // Determine which branches to allow
@@ -823,9 +811,9 @@ function _ensureAuditLogColumns(): void
         $db = getDB();
         $cols = [];
         foreach ($db->query(
-            "SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'audit_logs'"
+            "SELECT column_name AS \"Field\" FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'audit_logs'"
         )->fetchAll(PDO::FETCH_ASSOC) as $c) {
-            $cols[strtolower($c['column_name'])] = true;
+            $cols[strtolower($c['Field'])] = true;
         }
 
         if (!isset($cols['module'])) {
@@ -890,13 +878,10 @@ function postToGL(
 
     try {
         $db = getDB();
-        // ★ FIX: PostgreSQL CREATE TABLE IF NOT EXISTS is transaction-safe (unlike MySQL DDL).
-        // Previously, schema creation was skipped when inTransaction() was true, which caused
-        // loan repayments and other financial flows to fail with "relation does not exist" if
-        // the GL tables hadn't been created yet. PostgreSQL DDL inside transactions is safe —
-        // it rolls back with the transaction on failure, unlike MySQL which auto-commits.
+        // DDL in PostgreSQL can trigger implicit commit; never run schema self-heal
+        // inside active business transactions (e.g., loan repayment/disbursement flows).
         static $glSchemaEnsured = false;
-        if (!$glSchemaEnsured) {
+        if (!$glSchemaEnsured && !$db->inTransaction()) {
             $db->exec("CREATE TABLE IF NOT EXISTS general_ledger (
                 id SERIAL PRIMARY KEY,
                 account_code VARCHAR(20) NOT NULL DEFAULT '',
@@ -912,9 +897,9 @@ function postToGL(
                 branch VARCHAR(100) DEFAULT '',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )");
-            try { $db->exec("CREATE INDEX IF NOT EXISTS idx_gl_ref ON general_ledger (reference)"); } catch (PDOException $e) {}
-            try { $db->exec("CREATE INDEX IF NOT EXISTS idx_gl_code ON general_ledger (account_code)"); } catch (PDOException $e) {}
-            try { $db->exec("CREATE INDEX IF NOT EXISTS idx_gl_branch ON general_ledger (branch)"); } catch (PDOException $e) {}
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_gl_ref ON general_ledger (reference)");
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_gl_code ON general_ledger (account_code)");
+            $db->exec("CREATE INDEX IF NOT EXISTS idx_gl_branch ON general_ledger (branch)");
             $db->exec("CREATE TABLE IF NOT EXISTS gl_journal (
                 id SERIAL PRIMARY KEY,
                 journal_ref VARCHAR(50) NOT NULL DEFAULT '',
@@ -1441,9 +1426,9 @@ function _ensureStaffColumns(PDO $db): void
     try {
         $cols = [];
         foreach ($db->query(
-            "SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff'"
+            "SELECT column_name AS \"Field\" FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff'"
         )->fetchAll(PDO::FETCH_ASSOC) as $c) {
-            $cols[strtolower($c['column_name'])] = true;
+            $cols[strtolower($c['Field'])] = true;
         }
 
         if (!isset($cols['force_password_change'])) {
@@ -1498,7 +1483,7 @@ function _ensureSessionColumns(PDO $db): void
 
         $cols = [];
         $rawCols = $db->query(
-            "SELECT a.attname AS column_name, pg_catalog.format_type(a.atttypid, a.atttypmod) AS data_type
+            "SELECT a.attname AS \"Field\", pg_catalog.format_type(a.atttypid, a.atttypmod) AS \"Type\"
              FROM pg_catalog.pg_attribute a
              JOIN pg_catalog.pg_class c ON a.attrelid = c.oid
              JOIN pg_catalog.pg_namespace n ON c.relnamespace = n.oid
@@ -1508,7 +1493,7 @@ function _ensureSessionColumns(PDO $db): void
                AND NOT a.attisdropped"
         )->fetchAll(PDO::FETCH_ASSOC);
         foreach ($rawCols as $c) {
-            $cols[strtolower($c['column_name'])] = $c['data_type'] ?? true;
+            $cols[strtolower($c['Field'])] = $c['Type'] ?? true;
         }
 
         if (isset($cols['id']) && is_string($cols['id'])) {
@@ -1717,9 +1702,9 @@ function _ensureLoginHistoryColumns(PDO $db): void
     try {
         $cols = [];
         foreach ($db->query(
-            "SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'login_history'"
+            "SELECT column_name AS \"Field\" FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'login_history'"
         )->fetchAll(PDO::FETCH_ASSOC) as $c) {
-            $cols[strtolower($c['column_name'])] = true;
+            $cols[strtolower($c['Field'])] = true;
         }
 
         if (!isset($cols['device_fingerprint'])) {
