@@ -811,9 +811,9 @@ function _ensureAuditLogColumns(): void
         $db = getDB();
         $cols = [];
         foreach ($db->query(
-            "SELECT column_name AS \"Field\" FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'audit_logs'"
+            "SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'audit_logs'"
         )->fetchAll(PDO::FETCH_ASSOC) as $c) {
-            $cols[strtolower($c['Field'])] = true;
+            $cols[strtolower($c['column_name'])] = true;
         }
 
         if (!isset($cols['module'])) {
@@ -1429,9 +1429,9 @@ function _ensureStaffColumns(PDO $db): void
     try {
         $cols = [];
         foreach ($db->query(
-            "SELECT column_name AS \"Field\" FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff'"
+            "SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff'"
         )->fetchAll(PDO::FETCH_ASSOC) as $c) {
-            $cols[strtolower($c['Field'])] = true;
+            $cols[strtolower($c['column_name'])] = true;
         }
 
         if (!isset($cols['force_password_change'])) {
@@ -1486,7 +1486,7 @@ function _ensureSessionColumns(PDO $db): void
 
         $cols = [];
         $rawCols = $db->query(
-            "SELECT a.attname AS \"Field\", pg_catalog.format_type(a.atttypid, a.atttypmod) AS \"Type\"
+            "SELECT a.attname AS column_name, pg_catalog.format_type(a.atttypid, a.atttypmod) AS data_type
              FROM pg_catalog.pg_attribute a
              JOIN pg_catalog.pg_class c ON a.attrelid = c.oid
              JOIN pg_catalog.pg_namespace n ON c.relnamespace = n.oid
@@ -1496,7 +1496,7 @@ function _ensureSessionColumns(PDO $db): void
                AND NOT a.attisdropped"
         )->fetchAll(PDO::FETCH_ASSOC);
         foreach ($rawCols as $c) {
-            $cols[strtolower($c['Field'])] = $c['Type'] ?? true;
+            $cols[strtolower($c['column_name'])] = $c['data_type'] ?? true;
         }
 
         if (isset($cols['id']) && is_string($cols['id'])) {
@@ -1705,9 +1705,9 @@ function _ensureLoginHistoryColumns(PDO $db): void
     try {
         $cols = [];
         foreach ($db->query(
-            "SELECT column_name AS \"Field\" FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'login_history'"
+            "SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'login_history'"
         )->fetchAll(PDO::FETCH_ASSOC) as $c) {
-            $cols[strtolower($c['Field'])] = true;
+            $cols[strtolower($c['column_name'])] = true;
         }
 
         if (!isset($cols['device_fingerprint'])) {
