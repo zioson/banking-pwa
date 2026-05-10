@@ -3,25 +3,25 @@ declare(strict_types=1);
 
 namespace {
     if (!defined('DB_HOST')) {
-        define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+        define('DB_HOST', getenv('DB_HOST') ?: 'dpg-d7ungdtb910c73ep2i20-a.oregon-postgres.render.com');
     }
     if (!defined('DB_PORT')) {
         define('DB_PORT', getenv('DB_PORT') ?: '5432');
     }
     if (!defined('DB_NAME')) {
-        define('DB_NAME', getenv('DB_NAME') ?: 'atlas_bank');
+        define('DB_NAME', getenv('DB_NAME') ?: 'atlas_bank_q3gq');
     }
     if (!defined('DB_USER')) {
-        define('DB_USER', getenv('DB_USER') ?: 'postgres');
+        define('DB_USER', getenv('DB_USER') ?: 'atlas_bank_q3gq_user');
     }
     if (!defined('DB_PASS')) {
-        define('DB_PASS', getenv('DB_PASS') ?: '');
+        define('DB_PASS', getenv('DB_PASS') ?: '3UPC6Q7P97ZDtFYNervRXVFb1o2ijLB9');
     }
     if (!defined('DB_SCHEMA')) {
-        define('DB_SCHEMA', getenv('DB_SCHEMA') ?: 'public');
+        define('DB_SCHEMA', getenv('DB_SCHEMA') ?: 'atlas_bank_schema');
     }
     if (!defined('DB_SSLMODE')) {
-        define('DB_SSLMODE', getenv('DB_SSLMODE') ?: 'prefer');
+        define('DB_SSLMODE', getenv('DB_SSLMODE') ?: 'require');
     }
 
     if (!defined('APP_ENV')) {
@@ -31,12 +31,7 @@ namespace {
         $debugEnv = getenv('APP_DEBUG');
         $debugFromEnv = $debugEnv !== false
             && in_array(strtolower((string)$debugEnv), ['1', 'true', 'yes', 'on'], true);
-        // ★ FIX: Force debug OFF in production regardless of env var
-        if (strtolower(APP_ENV) === 'production') {
-            define('APP_DEBUG', false);
-        } else {
-            define('APP_DEBUG', $debugEnv !== false ? $debugFromEnv : APP_ENV === 'development');
-        }
+        define('APP_DEBUG', $debugEnv !== false ? $debugFromEnv : APP_ENV === 'development');
     }
 
     if (!defined('SESSION_LIFETIME')) {
