@@ -44,41 +44,6 @@ register_shutdown_function(function() {
     }
 });
 
-// ── PHP Built-in Server Support (for Render deployment) ──
-// When running via `php -S ... router.php`, this file is the router script.
-// If the request is for a static file that exists, serve it directly (return false).
-// If the request is for the root path (/) or a non-API path, serve index.php.
-// If the request is for /api/*, continue to the API routing logic below.
-if (php_sapi_name() === 'cli-server') {
-    $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-
-    // Serve existing static files directly (CSS, JS, images, etc.)
-    $staticFile = __DIR__ . $requestUri;
-    if ($requestUri !== '/' && file_exists($staticFile) && !is_dir($staticFile)) {
-        return false; // Let PHP serve the static file
-    }
-
-    // Root path → serve index.php (health check)
-    if ($requestUri === '/' || $requestUri === '/index.php') {
-        require __DIR__ . '/index.php';
-        exit;
-    }
-
-    // Lightweight ping → no DB dependency
-    if ($requestUri === '/ping' || $requestUri === '/ping.php') {
-        require __DIR__ . '/ping.php';
-        exit;
-    }
-
-    // Non-API paths that don't match files → 404
-    if (stripos($requestUri, '/api') !== 0) {
-        http_response_code(404);
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['success' => false, 'error' => 'Not found. API endpoints start at /api/']);
-        exit;
-    }
-}
-
 try {
 
 // -----------------------------------------------------------

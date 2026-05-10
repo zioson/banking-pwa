@@ -2,42 +2,9 @@
 # Atlas Bank Enterprise Operations Console
 # Apache .htaccess - URL Rewriting
 # ============================================================
-# IMPORTANT: When deployed in a subdirectory (e.g. /atlas-bank-backend/),
-# Apache processes .htaccess relative to that directory. The RewriteBase
-# ensures that rewrites work correctly regardless of deployment path.
-# ============================================================
 
 # Enable rewrite engine
 RewriteEngine On
-
-# -----------------------------------------------------------
-# DirectoryIndex — Serve the frontend console at the directory root
-# When someone visits /atlas-bank-backend/, Apache looks for
-# DirectoryIndex files. We want the HTML console, NOT index.php.
-# The API health check is still available at /atlas-bank-backend/index.php
-# or /atlas-bank-backend/api/?health
-# -----------------------------------------------------------
-DirectoryIndex atlas-bank-enterprise-console-v10.html index.php
-
-# -----------------------------------------------------------
-# RewriteBase — CRITICAL for subdirectory deployments
-# On Render, the app is served from /atlas-bank-backend/ subdirectory.
-# When Apache processes this .htaccess, the path is already relative
-# to the directory, so RewriteBase / works for both root and subdirectory.
-# However, for explicit clarity and to prevent path resolution issues:
-# -----------------------------------------------------------
-# Auto-detect: if SCRIPT_NAME contains a subdirectory, use it.
-# For Render deployment at /atlas-bank-backend/:
-#   RewriteBase /atlas-bank-backend/
-# For root deployment:
-#   RewriteBase /
-# Comment/uncomment the appropriate line below:
-
-# ★ For Render deployment (subdirectory):
-RewriteBase /atlas-bank-backend/
-
-# For root deployment (uncomment if deploying at web root):
-# RewriteBase /
 
 # -----------------------------------------------------------
 # CRITICAL FIX: Pass Authorization header to PHP
@@ -51,22 +18,10 @@ RewriteBase /atlas-bank-backend/
 SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
 RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-# -----------------------------------------------------------
 # Route all /api/* requests through router.php
-# The RewriteBase above handles the subdirectory prefix, so the
-# RewriteRule only needs to match the relative path "api/..."
-# -----------------------------------------------------------
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^api/(.*)$ router.php [QSA,L]
-
-# -----------------------------------------------------------
-# Serve the frontend HTML for /console or /app shortcuts
-# (DirectoryIndex handles the root path above)
-# -----------------------------------------------------------
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(console|app)$ atlas-bank-enterprise-console-v10.html [L]
 
 # -----------------------------------------------------------
 # Security Headers
@@ -87,19 +42,11 @@ RewriteRule ^(console|app)$ atlas-bank-enterprise-console-v10.html [L]
     # Referrer Policy
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
 
-    # Content Security Policy — only apply strict CSP to API responses (JSON).
-    # The frontend HTML file has its own CSP meta tag with appropriate rules
-    # for scripts, styles, and external resources. Do NOT override it here
-    # or the console will break (scripts blocked, styles blocked).
-    # Apply API-only CSP only when the response is JSON (detected via URL pattern).
-    <FilesMatch "\.php$">
-        Header always set Content-Security-Policy "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
-    </FilesMatch>
+    # Content Security Policy (relaxed for API)
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'none'; style-src 'none'; img-src 'self' data:; font-src 'none'; connect-src 'self'; frame-ancestors 'none';"
 
-    # HSTS — enable in production with HTTPS
-    <If "%{HTTPS} == 'on'">
-        Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-    </If>
+    # HSTS (enable in production with appropriate max-age)
+    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
 </IfModule>
 
 # -----------------------------------------------------------
@@ -132,7 +79,7 @@ Options -Indexes
 
 # Deny access to config and includes directories
 <IfModule mod_rewrite.c>
-    RewriteRule ^(config|includes|database|middleware|storage)/ - [F,L]
+    RewriteRule ^(config|includes|database|middleware)/ - [F,L]
 </IfModule>
 
 # -----------------------------------------------------------
@@ -163,5 +110,14 @@ AddDefaultCharset UTF-8
     ExpiresByType text/css "access plus 1 week"
     ExpiresByType application/javascript "access plus 1 week"
     ExpiresByType application/json "access plus 0 seconds"
-    ExpiresByType text/html "access plus 0 seconds"
 </IfModule>
+
+# -----------------------------------------------------------
+# Error documents — only for non-API requests (API sends its own JSON errors)
+# -----------------------------------------------------------
+# Do NOT use ErrorDocument for API errors — router.php handles its own JSON responses
+# ErrorDocument 400 /index.php
+# ErrorDocument 401 /index.php
+# ErrorDocument 403 /index.php
+# ErrorDocument 404 /index.php
+# ErrorDocument 500 /index.php
