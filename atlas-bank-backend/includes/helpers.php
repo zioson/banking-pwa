@@ -638,8 +638,10 @@ function applyBranchFilter(array $staffBranches, string $clientBranch, array &$p
     // Build SQL fragment with double-quote protection only for simple column names (no dots)
     $safeColumn = (strpos($columnName, '.') !== false) ? $columnName : '"' . $columnName . '"';
 
-    // ★ FIXED (SEC-AUDIT-001): Admins always bypass branch filtering unless they explicitly request one.
-    if (strtoupper($role) === 'ADMIN') {
+    // ★ FIXED: Admin and SUPER_ADMIN always bypass branch filtering unless they
+    // explicitly request a specific branch. These roles have enterprise-wide access.
+    $roleUpper = strtoupper($role);
+    if (in_array($roleUpper, ['ADMIN', 'SUPER_ADMIN'], true)) {
         if (!empty($clientBranch)) {
             $params[':bf_admin_req'] = $clientBranch;
             return " AND $safeColumn = :bf_admin_req";
@@ -671,9 +673,19 @@ function applyBranchFilter(array $staffBranches, string $clientBranch, array &$p
         }
         return '';
     }
+
+    // ★ FIXED: If the user has no assigned branches but holds a privileged role that
+    // wasn't caught above (e.g., MANAGER, ACCOUNTANT with enterprise-wide read access),
+    // treat empty branches as "ALL" when a specific branch filter is requested — this
+    // prevents the GL panel from returning zero results when the branch dropdown is used.
     if (empty($staffBranchesNorm)) {
-        $params[':bf_deny'] = '__IMPOSSIBLE_BRANCH__';
-        return " AND $safeColumn = :bf_deny";
+        if (!empty($clientBranch)) {
+            // User requested a specific branch — allow it (read-only filter, not a security gate)
+            $params[':bf_nobranch_req'] = $clientBranch;
+            return " AND $safeColumn = :bf_nobranch_req";
+        }
+        // No branches assigned and no filter requested — return all (no WHERE restriction)
+        return '';
     }
 
     // Determine which branches to allow
