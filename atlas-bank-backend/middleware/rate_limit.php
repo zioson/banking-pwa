@@ -8,6 +8,10 @@
  * Uses a single-row-per-key model in the rate_limits table.
  * Self-heals the table on first use.
  *
+ * Fallback: When the database is unavailable, a file-backed rate limiter
+ * is used instead of per-request in-memory storage, ensuring durable
+ * protection across requests.
+ *
  * @see checkRateLimit()      — returns bool (does not exit)
  * @see requireRateLimit()    — sends 429 and exits if limited
  * @see getRateLimitHeaders() — returns X-RateLimit-* header values
@@ -35,10 +39,71 @@ function ensureRateLimitsTable(): void
         try { $db->exec("CREATE INDEX IF NOT EXISTS idx_blocked ON rate_limits (blocked_until)"); } catch (PDOException $ie) {}
         $ensured = true;
     } catch (PDOException $e) {
-        // Table creation failed — rate limiting will fail-open
+        // Table creation failed — checkRateLimit() will use the durable fallback
         if (defined('APP_DEBUG') && APP_DEBUG) {
             error_log('[RateLimit] Failed to create rate_limits table: ' . $e->getMessage());
         }
+    }
+}
+
+/**
+ * Durable file-backed fallback for rate limiting when the database is unavailable.
+ */
+function checkFileRateLimitFallback(string $key, int $maxRequests, int $windowSeconds): bool
+{
+    $dir = __DIR__ . '/../storage/rate_limits';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0750, true);
+    }
+
+    if (!is_dir($dir) || !is_writable($dir)) {
+        // Fail closed for authentication-style limits if no durable fallback can be written.
+        return !str_starts_with($key, 'login:') && !str_starts_with($key, 'login_user:');
+    }
+
+    $file = $dir . '/' . hash('sha256', $key) . '.json';
+    $now = time();
+    $state = ['count' => 0, 'first_attempt_at' => $now, 'blocked_until' => 0];
+
+    $fh = @fopen($file, 'c+');
+    if ($fh === false) {
+        return !str_starts_with($key, 'login:') && !str_starts_with($key, 'login_user:');
+    }
+
+    try {
+        flock($fh, LOCK_EX);
+        $raw = stream_get_contents($fh);
+        if (is_string($raw) && trim($raw) !== '') {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                $state = array_merge($state, $decoded);
+            }
+        }
+
+        if ((int)($state['blocked_until'] ?? 0) > $now) {
+            header('Retry-After: ' . max(1, (int)$state['blocked_until'] - $now));
+            return false;
+        }
+
+        if ($now - (int)($state['first_attempt_at'] ?? $now) >= $windowSeconds) {
+            $state = ['count' => 1, 'first_attempt_at' => $now, 'blocked_until' => 0];
+        } else {
+            $state['count'] = (int)($state['count'] ?? 0) + 1;
+            if ($state['count'] >= $maxRequests) {
+                $state['blocked_until'] = $now + $windowSeconds;
+                header('Retry-After: ' . $windowSeconds);
+            }
+        }
+
+        ftruncate($fh, 0);
+        rewind($fh);
+        fwrite($fh, json_encode($state));
+        fflush($fh);
+
+        return (int)($state['blocked_until'] ?? 0) <= $now;
+    } finally {
+        flock($fh, LOCK_UN);
+        fclose($fh);
     }
 }
 
@@ -124,35 +189,13 @@ function checkRateLimit(string $key, int $maxRequests = 30, int $windowSeconds =
             return true;
         }
     } catch (PDOException $e) {
-        // ★ SECURITY FIX (MEDIUM): Fail-CLOSED with in-memory fallback.
-        // Previously fail-open (return true) — an attacker could exhaust the DB
-        // connection pool, then brute-force without rate limiting.
-        // Now: use APCu/file-based fallback for 60-second window.
+        // Fail closed through a durable file-backed fallback. Per-request memory is not
+        // enough protection for login/MFA endpoints because it resets every request.
         if (defined('APP_DEBUG') && APP_DEBUG) {
-            error_log('[RateLimit] DB error, using in-memory fallback: ' . $e->getMessage());
+            error_log('[RateLimit] DB error, using file fallback: ' . $e->getMessage());
         }
 
-        // In-memory fallback using static variable (per-request only)
-        static $memoryCounts = [];
-        $now = time();
-        $windowKey = $key . ':' . (int)($now / $windowSeconds);
-
-        if (!isset($memoryCounts[$windowKey])) {
-            $memoryCounts[$windowKey] = ['count' => 0, 'window' => $windowKey];
-        }
-
-        $memoryCounts[$windowKey]['count']++;
-
-        if ($memoryCounts[$windowKey]['count'] >= $maxRequests) {
-            // Clean old windows
-            foreach ($memoryCounts as $k => $v) {
-                if ($k !== $windowKey) unset($memoryCounts[$k]);
-            }
-            header('Retry-After: ' . $windowSeconds);
-            return false;
-        }
-
-        return true;
+        return checkFileRateLimitFallback($key, $maxRequests, $windowSeconds);
     }
 }
 

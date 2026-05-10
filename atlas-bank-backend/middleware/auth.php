@@ -86,7 +86,7 @@ function requireAuth(): array
     try {
         $db = getDB();
 
-        // ── Self-heal: ensure sessions + staff tables have enterprise columns ──
+        // ── Auto-migrate: ensure sessions + staff tables have enterprise columns ──
         _ensureSessionColumns($db);
         _ensureStaffColumns($db);
 
@@ -276,8 +276,8 @@ function requireAuth(): array
 
         // expiry extension handled above (idle sliding window)
 
-        // Get staff modules for RBAC — self-healing
-        // If staff_modules table doesn't exist yet, auto-create it and default to ALL access.
+        // Get staff modules for RBAC
+        // If staff_modules table doesn't exist yet, auto-create it.
         try {
             // Try loading with access_level (new schema) — if column doesn't exist, fall back
             try {
@@ -298,25 +298,16 @@ function requireAuth(): array
                 $session['module_access'] = array_combine($modules, array_fill(0, count($modules), 'FULL'));
             }
 
-            // ── Self-heal: auto-assign TRANSACTIONS module for staff with zero modules ──
-            // In enterprise banking, all active staff (tellers, cashiers, officers) must be
-            // able to perform deposits and withdrawals. If the admin created a staff account
-            // but forgot to assign any modules, the user gets a silent 403 on every operation.
-            // This one-time self-heal grants the TRANSACTIONS module so the teller can operate.
+            // Fail closed for staff with zero modules. Module provisioning must be explicit.
             if (empty($modules) && strtoupper($session['role'] ?? '') !== 'SUPER_ADMIN') {
-                $defaultModules = ['TRANSACTIONS', 'ACCOUNTS', 'CUSTOMERS', 'DASHBOARD'];
-                $insStmt = $db->prepare('INSERT INTO staff_modules (staff_id, module_name) VALUES (:sid, :mod) ON CONFLICT (staff_id, module_name) DO NOTHING');
-                foreach ($defaultModules as $mod) {
-                    $insStmt->execute([':sid' => $session['staff_id'], ':mod' => $mod]);
-                }
-                $session['modules'] = $defaultModules;
-                $session['module_access'] = array_combine($defaultModules, array_fill(0, count($defaultModules), 'FULL'));
-                error_log('[AUTH SELF-HEAL] Staff ID ' . $session['staff_id'] . ' (' . $session['username'] . ') had zero modules. Auto-assigned: ' . implode(', ', $defaultModules));
+                $session['modules'] = [];
+                $session['module_access'] = [];
+                error_log('[AUTH SECURITY] Staff ID ' . $session['staff_id'] . ' (' . $session['username'] . ') has zero modules; access remains denied until an administrator provisions modules.');
                 try {
                     logAudit(
-                        $session['full_name'], 'MODULE_AUTO_ASSIGN', 'STAFF',
-                        (string)$session['staff_id'], 'SUCCESS',
-                        'Auto-assigned modules to staff with zero assignments: ' . implode(', ', $defaultModules),
+                        $session['full_name'], 'MODULE_ASSIGNMENT_MISSING', 'STAFF',
+                        (string)$session['staff_id'], 'DENIED',
+                        'Staff has zero module assignments; no modules were auto-granted.',
                         $session['department'] ?? '', getClientIp()
                     );
                 } catch (\Throwable $auditErr) { /* non-critical */ }
@@ -341,7 +332,7 @@ function requireAuth(): array
             error_log('[AUTH SECURITY] Staff ID ' . ($session['staff_id'] ?? 'unknown') . ': staff_modules query failed — granted ZERO modules (fail-safe).');
         }
 
-        // Get staff branches — self-healing
+        // Get staff branches — auto-migrate
         // If staff_branches table doesn't exist yet, auto-create it.
         try {
             $brStmt = $db->prepare('SELECT branch_name FROM staff_branches WHERE staff_id = :staff_id');
@@ -455,7 +446,7 @@ function getAuthUser(): ?array
     try {
         $db = getDB();
 
-        // ── Self-heal: ensure sessions + staff tables have enterprise columns ──
+        // ── Auto-migrate: ensure sessions + staff tables have enterprise columns ──
         _ensureSessionColumns($db);
         _ensureStaffColumns($db);
 
@@ -506,7 +497,7 @@ function getAuthUser(): ?array
             ]);
         } catch (Throwable $_) { /* keep authenticated session */ }
 
-        // Get modules — self-healing
+        // Get modules — auto-migrate
         try {
             $modStmt = $db->prepare('SELECT module_name FROM staff_modules WHERE staff_id = :staff_id');
             $modStmt->execute([':staff_id' => $session['staff_id']]);
@@ -526,7 +517,7 @@ function getAuthUser(): ?array
             $session['modules'] = [];
         }
 
-        // Get branches — self-healing
+        // Get branches — auto-migrate
         try {
             $brStmt = $db->prepare('SELECT branch_name FROM staff_branches WHERE staff_id = :staff_id');
             $brStmt->execute([':staff_id' => $session['staff_id']]);
