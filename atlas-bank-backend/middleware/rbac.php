@@ -226,9 +226,9 @@ function hasRole($roles, array $staff): bool
  */
 function hasBranchAccess(string $branchName, array $staff): bool
 {
-    // ★ FIXED: Admin and SUPER_ADMIN always have access to all branches
-    $roleUpper = strtoupper((string)($staff['role'] ?? ''));
-    if (in_array($roleUpper, ['ADMIN', 'SUPER_ADMIN'], true)) {
+    // ★ FIX: Admin and Super Admin roles bypass branch access checks
+    $role = strtoupper($staff['role'] ?? '');
+    if (in_array($role, ['ADMIN', 'SUPER_ADMIN'], true)) {
         return true;
     }
 
