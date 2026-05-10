@@ -142,8 +142,9 @@ function reportSafeAddCol(PDO $db, string $table, string $col, string $def): voi
  */
 function reportAddCol(PDO $db, string $col, string $def): void {
     try {
-        $r = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'profit_ledger' AND column_name = '$col'");
-        if (!$r->fetch()) $db->exec("ALTER TABLE \"profit_ledger\" ADD COLUMN \"$col\" $def");
+        $r = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'profit_ledger' AND column_name = ?");
+        $r->execute([$col]);
+        if (!$r->fetch()) $db->exec('ALTER TABLE "profit_ledger" ADD COLUMN "' . $col . '" ' . $def);
     } catch (PDOException $e) {
         error_log('[Reports Schema] reportAddCol(' . $col . ') failed: ' . $e->getMessage());
     }
@@ -1990,7 +1991,7 @@ switch ($method) {
                 $sql = 'INSERT INTO profit_ledger (' . implode(', ', $insertCols) . ') VALUES (' . implode(', ', array_keys($insertParams)) . ')';
                 $stmt = $db->prepare($sql);
                 $stmt->execute($insertParams);
-                $newId = (int)$db->lastInsertId();
+                $newId = (int)$db->lastInsertId('profit_ledger_id_seq');
                 logAudit($staff['full_name'] ?? 'System', 'PROFIT_LEDGER_ENTRY', 'REPORTS', (string)$newId, 'SUCCESS',
                     'Recorded profit ledger entry for branch ' . ($input['branch'] ?? 'all'), $staff['department'] ?? '', getClientIp());
                 createdResponse(['id' => $newId], 'Profit ledger entry recorded.');
@@ -2019,8 +2020,9 @@ switch ($method) {
                     // Ensure fee column exists
                     try {
                         foreach (['fee' => 'DECIMAL(20,2) DEFAULT 0', 'fee_pct' => 'DECIMAL(8,4) DEFAULT 0'] as $col => $def) {
-                            $c = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'transactions' AND column_name = '$col'")->fetch();
-                            if (!$c) $db->exec("ALTER TABLE \"transactions\" ADD COLUMN \"$col\" $def");
+                            $cStmt = $db->prepare("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'transactions' AND column_name = ?");
+                            $cStmt->execute([$col]);
+                            if (!$cStmt->fetch()) $db->exec('ALTER TABLE "transactions" ADD COLUMN "' . $col . '" ' . $def);
                         }
                     } catch (PDOException $colErr) {
                         error_log('[Backfill] Column migration warning: ' . $colErr->getMessage());

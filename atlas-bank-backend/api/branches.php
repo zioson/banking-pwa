@@ -422,7 +422,7 @@ switch ($method) {
                 $bindParams = [$code, $name, $region, $country ?: 'CM', $status, $address, $phone, $manager];
                 if (!empty($openedDate)) $bindParams[] = $openedDate;
                 $stmt->execute($bindParams);
-                $newId = (int)$db->lastInsertId();
+                $newId = (int)$db->lastInsertId('branches_id_seq');
 
                 $rowStmt = $db->prepare("SELECT * FROM branches WHERE id = ?");
                 $rowStmt->execute([$newId]);

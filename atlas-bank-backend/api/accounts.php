@@ -66,7 +66,7 @@ switch ($method) {
                 // ★ FIX (ACC-011): Apply branch isolation to single-account GET
                 // Prevents staff from viewing account details of customers in other branches.
                 $role = strtoupper((string)($staff['role'] ?? ''));
-                if ($role !== 'ADMIN') {
+                if (!in_array($role, ['ADMIN', 'SUPER_ADMIN'], true)) {
                     $staffBranchesRaw = $staff['branches'] ?? [];
                     if (is_string($staffBranchesRaw)) {
                         $staffBranchesRaw = [$staffBranchesRaw];
@@ -161,7 +161,7 @@ switch ($method) {
                 ':currency' => sanitize($input['currency'] ?? 'XAF'),
                 ':opened'   => date('Y-m-d')
             ]);
-            $newId = (int)$db->lastInsertId();
+            $newId = (int)$db->lastInsertId('accounts_id_seq');
             logAudit($staff['full_name'], 'ACCOUNT_CREATE', 'ACCOUNT', (string)$newId, 'SUCCESS', 'Opened account ' . $accNum, $staff['department'], getClientIp());
             createdResponse(['id' => $newId, 'account_number' => $accNum], 'Account opened successfully.');
         } catch (PDOException $e) { serverErrorResponse('Failed to create account.'); }

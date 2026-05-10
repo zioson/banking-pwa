@@ -100,7 +100,7 @@ function lfEnsureSchema(PDO $db): void {
         type VARCHAR(20) NOT NULL,
         category VARCHAR(100),
         description TEXT,
-        is_active BOOLEAN DEFAULT 1
+        is_active BOOLEAN DEFAULT TRUE
     )");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_code ON chart_of_accounts (code)");
 
@@ -755,7 +755,7 @@ switch ($method) {
                             $staff['department'] ?? '', getClientIp());
 
                         successResponse([
-                            'id' => $db->lastInsertId(), 'ref' => $ref,
+                            'id' => $db->lastInsertId('loan_fund_transactions_id_seq'), 'ref' => $ref,
                             'accountNumber' => $accountNumber, 'type' => $type,
                             'amount' => $amount,
                             'balanceAfter' => $currentGLBalance,  // Unchanged
@@ -898,7 +898,7 @@ switch ($method) {
                             $staff['department'] ?? '', getClientIp());
 
                         successResponse([
-                            'id' => $db->lastInsertId(), 'ref' => $ref,
+                            'id' => $db->lastInsertId('loan_fund_transactions_id_seq'), 'ref' => $ref,
                             'accountNumber' => $accountNumber, 'type' => $type,
                             'amount' => $amount,
                             'balanceAfter' => $newGLBalance,
@@ -951,7 +951,7 @@ switch ($method) {
                             $staff['department'] ?? '', getClientIp());
 
                         successResponse([
-                            'id' => $db->lastInsertId(), 'ref' => $ref,
+                            'id' => $db->lastInsertId('loan_fund_transactions_id_seq'), 'ref' => $ref,
                             'accountNumber' => $accountNumber, 'type' => $type,
                             'amount' => $amount,
                             'balanceAfter' => $newGLBalance,
@@ -1031,7 +1031,7 @@ switch ($method) {
                             $staff['department'] ?? '', getClientIp());
 
                         successResponse([
-                            'id' => $db->lastInsertId(), 'ref' => $ref,
+                            'id' => $db->lastInsertId('loan_fund_transactions_id_seq'), 'ref' => $ref,
                             'accountNumber' => $accountNumber, 'type' => $type,
                             'amount' => $amount,
                             'balanceAfter' => $newBalance,
@@ -1063,7 +1063,7 @@ switch ($method) {
                             $staff['department'] ?? '', getClientIp());
 
                         successResponse([
-                            'id' => $db->lastInsertId(), 'ref' => $ref,
+                            'id' => $db->lastInsertId('loan_fund_transactions_id_seq'), 'ref' => $ref,
                             'accountNumber' => $accountNumber, 'type' => $type,
                             'amount' => $amount,
                             'balanceAfter' => $newBalance,

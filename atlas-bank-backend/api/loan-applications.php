@@ -103,11 +103,11 @@ function laEnsureSchema(PDO $db): void {
     laAddCol($db, 'loan_applications', 'repayment_mode', "VARCHAR(30) DEFAULT 'SCHEDULED'");
     laAddCol($db, 'loan_applications', 'repayment_amount', "DECIMAL(20,2) DEFAULT 0");
     laAddCol($db, 'loan_applications', 'repayment_pct', "DECIMAL(10,4) DEFAULT 0");
-    laAddCol($db, 'loan_applications', 'auto_deduct', "BOOLEAN DEFAULT 1");
-    laAddCol($db, 'loan_applications', 'interest_included', "BOOLEAN DEFAULT 1");
+    laAddCol($db, 'loan_applications', 'auto_deduct', "BOOLEAN DEFAULT TRUE");
+    laAddCol($db, 'loan_applications', 'interest_included', "BOOLEAN DEFAULT TRUE");
     laAddCol($db, 'loan_applications', 'loan_module', "VARCHAR(30) DEFAULT 'BANK'");
     laAddCol($db, 'loan_applications', 'insurance_fee', "DECIMAL(20,2) DEFAULT 0");
-    laAddCol($db, 'loan_applications', 'requires_double_approval', "BOOLEAN DEFAULT 0");
+    laAddCol($db, 'loan_applications', 'requires_double_approval', "BOOLEAN DEFAULT FALSE");
     laAddCol($db, 'loan_applications', 'debit_account_number', "VARCHAR(30) DEFAULT ''");
     laAddCol($db, 'loan_applications', 'debit_account_id', "INT DEFAULT NULL");
     laAddCol($db, 'loan_applications', 'disbursement_account_id', "INT DEFAULT NULL");
@@ -121,9 +121,11 @@ function laEnsureSchema(PDO $db): void {
     // ★ CRITICAL: DISBURSED status prevents re-disbursement loop on page refresh.
     // Without it, already-disbursed applications reappear as APPROVED in the UI.
     try {
-        $col = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'loan_applications' AND column_name = 'status'")->fetch();
-        if ($col && str_contains($col['Type'], 'VARCHAR(20)')) {
-            if (!str_contains($col['Type'], 'DISBURSED')) {
+        $col = $db->query("SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'loan_applications' AND column_name = 'status'")->fetch(PDO::FETCH_ASSOC);
+        if ($col && (str_contains(strtolower($col['data_type']), 'char') || str_contains(strtolower($col['data_type']), 'varchar'))) {
+            // Status column exists and is VARCHAR — ensure it's wide enough for all statuses
+            $colLen = $db->query("SELECT character_maximum_length FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'loan_applications' AND column_name = 'status'")->fetchColumn();
+            if ($colLen && (int)$colLen < 20) {
                 $db->exec("ALTER TABLE loan_applications ALTER COLUMN status TYPE VARCHAR(20)");
             }
         }
@@ -567,7 +569,7 @@ switch ($method) {
                     ':guarantor_account_id' => $guarantorAccountId,
                     ':guarantor_account_number' => $guarantorAccountNumber,
                 ]);
-                $newId = (int)$db->lastInsertId();
+                $newId = (int)$db->lastInsertId('loan_applications_id_seq');
 
                 $defaultChecks = [
                     ['code' => 'KYC_CHECK', 'name' => 'KYC Verification'],

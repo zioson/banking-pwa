@@ -108,6 +108,22 @@ try {
     error_log('[Transactions Init] profit_ledger table creation: ' . $e->getMessage());
 }
 
+// ── Ensure idempotency_keys table exists ──
+try {
+    $db->exec("CREATE TABLE IF NOT EXISTS idempotency_keys (
+        id            SERIAL PRIMARY KEY,
+        \"key\"         VARCHAR(255) NOT NULL,
+        operator_id   INTEGER NOT NULL,
+        response_json TEXT NOT NULL,
+        status        VARCHAR(20) NOT NULL DEFAULT 'COMPLETED',
+        expires_at    TIMESTAMP NOT NULL,
+        UNIQUE (\"key\", operator_id)
+    )");
+    try { $db->exec("ALTER TABLE idempotency_keys ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'COMPLETED'"); } catch (PDOException $ie) {}
+} catch (PDOException $e) {
+    error_log('[Transactions Init] idempotency_keys table creation: ' . $e->getMessage());
+}
+
 /**
  * Resolve withdrawal fee % from settings.
  * CURRENT accounts can use tiered rules from `withdrawal.fee_tiers_current`:
@@ -624,18 +640,48 @@ switch ($method) {
         // ★ IDEMPOTENCY CHECK (TXN-SEC-001): Prevent double-spending/race conditions
         // Uses X-Idempotency-Key header or input field.
         $idempotencyKey = $_SERVER['HTTP_X_IDEMPOTENCY_KEY'] ?? ($input['idempotency_key'] ?? null);
+        $idempotencyReserved = false;
         if ($idempotencyKey) {
+            $idempotencyKey = substr(sanitize((string)$idempotencyKey), 0, 255);
+            if ($idempotencyKey === '') {
+                validationError(['idempotency_key' => 'Invalid idempotency key.']);
+            }
             try {
                 $db = getDB();
-                // Check for existing key
-                $stmt = $db->prepare("SELECT response_json FROM idempotency_keys WHERE \"key\" = :key AND operator_id = :op_id AND expires_at > NOW() LIMIT 1");
-                $stmt->execute([':key' => $idempotencyKey, ':op_id' => $staff['id']]);
-                $existing = $stmt->fetch();
-                if ($existing) {
-                    $cachedResp = json_decode($existing['response_json'], true);
-                    successResponse($cachedResp['data'] ?? [], $cachedResp['message'] ?? 'Idempotent response');
+                // Reserve the key before financial work. This closes the race where two
+                // simultaneous retries both miss the cache and create duplicate postings.
+                $reserve = $db->prepare("INSERT INTO idempotency_keys (\"key\", operator_id, response_json, status, expires_at) VALUES (:key, :op_id, :resp, 'PROCESSING', NOW() + INTERVAL '1 hour') ON CONFLICT (\"key\", operator_id) DO NOTHING");
+                $reserve->execute([
+                    ':key' => $idempotencyKey,
+                    ':op_id' => $staff['id'],
+                    ':resp' => json_encode(['status' => 'PROCESSING'])
+                ]);
+                $idempotencyReserved = $reserve->rowCount() === 1;
+
+                if (!$idempotencyReserved) {
+                    $stmt = $db->prepare('SELECT response_json, status FROM idempotency_keys WHERE "key" = :key AND operator_id = :op_id AND expires_at > NOW() LIMIT 1');
+                    $stmt->execute([':key' => $idempotencyKey, ':op_id' => $staff['id']]);
+                    $existing = $stmt->fetch();
+                    if ($existing) {
+                        if (($existing['status'] ?? '') === 'PROCESSING') {
+                            errorResponse('A request with this idempotency key is already processing. Retry shortly.', 409);
+                        }
+                        $cachedResp = json_decode($existing['response_json'], true);
+                        successResponse($cachedResp['data'] ?? [], $cachedResp['message'] ?? 'Idempotent response');
+                    }
+                    // Expired row: replace it with a fresh reservation.
+                    $db->prepare('DELETE FROM idempotency_keys WHERE "key" = :key AND operator_id = :op_id')->execute([':key' => $idempotencyKey, ':op_id' => $staff['id']]);
+                    $reserve->execute([
+                        ':key' => $idempotencyKey,
+                        ':op_id' => $staff['id'],
+                        ':resp' => json_encode(['status' => 'PROCESSING'])
+                    ]);
+                    $idempotencyReserved = $reserve->rowCount() === 1;
                 }
-            } catch (PDOException $e) { /* ignore error */ }
+            } catch (PDOException $e) {
+                error_log('[TXN IDEMPOTENCY] Reservation failed: ' . $e->getMessage());
+                errorResponse('Could not reserve idempotency key. Please retry.', 503);
+            }
         }
 
         error_log('[TXN POST] Request received. Raw input keys: ' . implode(', ', array_keys($input)) . ' | Type: ' . ($input['type'] ?? 'NULL') . ' | Amount: ' . ($input['amount'] ?? 'NULL') . ' | Account: ' . ($input['account'] ?? 'NULL') . ' | Status: ' . ($input['status'] ?? 'NULL'));
@@ -866,7 +912,7 @@ switch ($method) {
                     $sql = 'INSERT INTO transactions (' . implode(', ', $insertColNames) . ') VALUES (' . implode(', ', $insertValues) . ')';
                     $stmt = $db->prepare($sql);
                     $stmt->execute($bindParamList);
-                    $newId = (int)$db->lastInsertId();
+                    $newId = (int)$db->lastInsertId('transactions_id_seq');
 
                     // ── Update account balance atomically ──
                     // Only for POSTED transactions (skip PENDING / PENDING_APPROVAL)
@@ -1161,7 +1207,7 @@ switch ($method) {
                         try {
                             $dbIdem = getDB();
                             $respJson = json_encode(['data' => $responseData, 'message' => 'Transaction created successfully.']);
-                            $stmtIdem = $dbIdem->prepare("INSERT INTO idempotency_keys (\"key\", operator_id, response_json, expires_at) VALUES (:key, :op_id, :resp, NOW() + INTERVAL '1 hour') ON CONFLICT (\"key\", operator_id) DO UPDATE SET response_json = EXCLUDED.response_json");
+                            $stmtIdem = $dbIdem->prepare("UPDATE idempotency_keys SET response_json = :resp, status = 'COMPLETED', expires_at = NOW() + INTERVAL '1 hour' WHERE \"key\" = :key AND operator_id = :op_id");
                             $stmtIdem->execute([':key' => $idempotencyKey, ':op_id' => $staff['id'], ':resp' => $respJson]);
                         } catch (PDOException $e) { /* ignore save error */ }
                     }
@@ -1169,8 +1215,8 @@ switch ($method) {
                     createdResponse($responseData, 'Transaction created successfully.');
                 } catch (PDOException $innerE) {
                     if ($db->inTransaction()) { $db->rollBack(); }
-                    // Duplicate key on ref (error 23000 / MySQL 1062) — retry with new ref
-                    if (($innerE->errorInfo[1] ?? 0) === 1062 && $attempt < $maxRetries - 1) {
+                    // Duplicate key on ref (PostgreSQL 23505 / MySQL 1062) — retry with new ref
+                    if ((($innerE->errorInfo[0] ?? '') === '23505' || ($innerE->errorInfo[1] ?? 0) === 1062) && $attempt < $maxRetries - 1) {
                         error_log('[Transactions POST] Duplicate ref ' . $ref . ', retrying (attempt ' . ($attempt + 1) . ')');
                         continue;
                     }
@@ -1179,11 +1225,23 @@ switch ($method) {
             }
         } catch (PDOException $e) {
             if (isset($db) && $db->inTransaction()) { $db->rollBack(); }
+            if (!empty($idempotencyReserved) && !empty($idempotencyKey)) {
+                try {
+                    getDB()->prepare("DELETE FROM idempotency_keys WHERE \"key\" = :key AND operator_id = :op_id AND status = 'PROCESSING'")
+                        ->execute([':key' => $idempotencyKey, ':op_id' => $staff['id']]);
+                } catch (Throwable $_) {}
+            }
             $errMsg = $e->getMessage();
             error_log('[Transactions POST] PDO Error: ' . $errMsg . ' | Code: ' . $e->getCode());
             serverErrorResponse('Failed to create transaction.');
         } catch (\Throwable $t) {
             if (isset($db) && $db->inTransaction()) { $db->rollBack(); }
+            if (!empty($idempotencyReserved) && !empty($idempotencyKey)) {
+                try {
+                    getDB()->prepare("DELETE FROM idempotency_keys WHERE \"key\" = :key AND operator_id = :op_id AND status = 'PROCESSING'")
+                        ->execute([':key' => $idempotencyKey, ':op_id' => $staff['id']]);
+                } catch (Throwable $_) {}
+            }
             error_log('[Transactions POST] Fatal error: ' . get_class($t) . ': ' . $t->getMessage() . ' in ' . $t->getFile() . ':' . $t->getLine());
             serverErrorResponse('Failed to create transaction.');
         }

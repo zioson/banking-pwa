@@ -702,7 +702,7 @@ switch ($method) {
 
             // ── Success response ─────────────────────────────────────────
             successResponse([
-                'id'              => (int)$db->lastInsertId(),
+                'id'              => (int)$db->lastInsertId('operating_account_transactions_id_seq'),
                 'ref'             => $ref,
                 'type'            => $type,
                 'amount'          => $amount,

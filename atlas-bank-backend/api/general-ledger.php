@@ -98,7 +98,7 @@ function ensureChartOfAccounts(PDO $db): void {
         type VARCHAR(20) NOT NULL,
         category VARCHAR(100),
         description TEXT,
-        is_active BOOLEAN DEFAULT 1
+        is_active BOOLEAN DEFAULT TRUE
     )");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_code ON chart_of_accounts (code)");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_type ON chart_of_accounts (type)");

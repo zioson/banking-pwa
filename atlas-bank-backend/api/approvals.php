@@ -227,7 +227,7 @@ switch ($method) {
                 ':value'   => sanitize($input['value']),
                 ':details' => $detailsJson
             ]);
-            $newId = (int)$db->lastInsertId();
+            $newId = (int)$db->lastInsertId('approvals_id_seq');
             logAudit($staff['full_name'], 'APPROVAL_SUBMIT', 'APPROVAL', (string)$newId, 'SUCCESS',
                 'Submitted approval for ' . $input['entity_type'] . ' #' . $input['entity_id'],
                 $staff['department'], getClientIp());

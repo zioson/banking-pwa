@@ -194,7 +194,7 @@ function invEnsureSchema(PDO $db): void
         max_target DECIMAL(20,2) NOT NULL,
         projected_div_rate DECIMAL(10,4) NOT NULL DEFAULT 12.0000,
         status VARCHAR(20) NOT NULL DEFAULT 'active',
-        dividend_paid BOOLEAN NOT NULL DEFAULT 0,
+        dividend_paid BOOLEAN NOT NULL DEFAULT FALSE,
         actual_div_rate DECIMAL(10,4) DEFAULT NULL,
         bank_reserved_amount DECIMAL(20,2) NOT NULL DEFAULT 0,
         branch VARCHAR(100) DEFAULT '',
@@ -427,7 +427,7 @@ function invCurrentShareholder(PDO $db, array $staff): array
         ':br' => $branch,
         ':sid' => $staffId
     ]);
-    $id = (int)$db->lastInsertId();
+    $id = (int)$db->lastInsertId('investment_shareholders_id_seq');
     $sel = $db->prepare("SELECT * FROM investment_shareholders WHERE id = :id");
     $sel->execute([':id' => $id]);
     return (array)$sel->fetch(PDO::FETCH_ASSOC);
@@ -939,7 +939,7 @@ if ($method === 'POST' && $id === 'shareholders') {
                ':phone' => $phone,
                ':br' => $branch
            ]);
-        $sid = (int)$db->lastInsertId();
+        $sid = (int)$db->lastInsertId('investment_shareholders_id_seq');
 
         if ($shares > 0) {
             invEnsureOperatingAccountArtifacts($db);
@@ -1092,7 +1092,7 @@ if ($method === 'POST' && $id === 'cycles' && $sub === '') {
                ':br' => $branch,
                ':uid' => $staffId
            ]);
-        $cid = (int)$db->lastInsertId();
+        $cid = (int)$db->lastInsertId('investment_cycles_id_seq');
 
         $db->prepare("INSERT INTO investment_transactions
                       (txn_ref, txn_date, shareholder_id, cycle_id, action, shares, amount, description, branch, created_by)

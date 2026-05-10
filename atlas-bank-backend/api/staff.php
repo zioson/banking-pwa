@@ -79,7 +79,7 @@ $db->exec("CREATE TABLE IF NOT EXISTS staff (
     department            VARCHAR(100) NOT NULL DEFAULT 'Operations',
     password_hash         TEXT         NOT NULL,
     salt                  VARCHAR(128) DEFAULT '',
-    mfa_required          BOOLEAN   NOT NULL DEFAULT 1,
+    mfa_required          BOOLEAN   NOT NULL DEFAULT TRUE,
     mfa_secret            VARCHAR(255) DEFAULT '',
     employment_status     VARCHAR(20)  NOT NULL DEFAULT 'ACTIVE',
     approval_limit        DECIMAL(15,2) NOT NULL DEFAULT 0.00,
@@ -87,9 +87,9 @@ $db->exec("CREATE TABLE IF NOT EXISTS staff (
     last_login            TIMESTAMP    NULL DEFAULT NULL,
     last_login_ip         VARCHAR(45)  DEFAULT '',
     failed_login_attempts INTEGER NOT NULL DEFAULT 0,
-    account_locked        BOOLEAN   NOT NULL DEFAULT 0,
+    account_locked        BOOLEAN   NOT NULL DEFAULT FALSE,
     locked_until          TIMESTAMP    NULL DEFAULT NULL,
-    force_password_change BOOLEAN   NOT NULL DEFAULT 0,
+    force_password_change BOOLEAN   NOT NULL DEFAULT FALSE,
     password_changed_at   TIMESTAMP    NULL DEFAULT NULL,
     created_at            TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     updated_at            TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
@@ -117,7 +117,7 @@ try { $db->exec('CREATE INDEX IF NOT EXISTS idx_staff_status ON staff (employmen
 try {
     $cols = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff' AND column_name = 'force_password_change'")->fetchAll();
     if (empty($cols)) {
-        $db->exec("ALTER TABLE staff ADD COLUMN force_password_change BOOLEAN NOT NULL DEFAULT 0");
+        $db->exec("ALTER TABLE staff ADD COLUMN force_password_change BOOLEAN NOT NULL DEFAULT FALSE");
     }
     $cols2 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff' AND column_name = 'password_changed_at'")->fetchAll();
     if (empty($cols2)) {
@@ -133,7 +133,7 @@ try {
     }
     $cols5 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff' AND column_name = 'notifications_enabled'")->fetchAll();
     if (empty($cols5)) {
-        $db->exec("ALTER TABLE staff ADD COLUMN notifications_enabled BOOLEAN NOT NULL DEFAULT 1");
+        $db->exec("ALTER TABLE staff ADD COLUMN notifications_enabled BOOLEAN NOT NULL DEFAULT TRUE");
     }
     $cols6 = $db->query("SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff' AND column_name = 'profile_picture'")->fetchAll();
     if (empty($cols6)) {
@@ -290,8 +290,8 @@ function attachAssignments(PDO $db, array &$record): void {
     try {
         // Self-heal: add access_level column if it doesn't exist (backward compat)
         $cols = [];
-        foreach ($db->query("SELECT column_name AS Field, data_type AS Type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff_modules' ORDER BY ordinal_position")->fetchAll(PDO::FETCH_ASSOC) as $_c) {
-            $cols[strtolower($_c['Field'])] = true;
+        foreach ($db->query("SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff_modules' ORDER BY ordinal_position")->fetchAll(PDO::FETCH_ASSOC) as $_c) {
+            $cols[strtolower($_c['column_name'])] = true;
         }
         if (!isset($cols['access_level'])) {
             $db->exec("ALTER TABLE staff_modules ADD COLUMN access_level VARCHAR(20) NOT NULL DEFAULT 'FULL'");
@@ -324,8 +324,8 @@ function syncModules(PDO $db, int $staffId, array $modules): void {
     // Ensure access_level column exists (self-heal for existing databases)
     try {
         $cols = [];
-        foreach ($db->query("SELECT column_name AS Field, data_type AS Type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff_modules' ORDER BY ordinal_position")->fetchAll(PDO::FETCH_ASSOC) as $_c) {
-            $cols[strtolower($_c['Field'])] = true;
+        foreach ($db->query("SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'staff_modules' ORDER BY ordinal_position")->fetchAll(PDO::FETCH_ASSOC) as $_c) {
+            $cols[strtolower($_c['column_name'])] = true;
         }
         if (!isset($cols['access_level'])) {
             $db->exec("ALTER TABLE staff_modules ADD COLUMN access_level VARCHAR(20) NOT NULL DEFAULT 'FULL'");
@@ -761,7 +761,7 @@ switch ($method) {
             ':ip'          => sanitize($input['ip_restrictions'] ?? 'Any'),
             ':force'       => 1  // Always force password change for new accounts
         ]);
-        $newId = (int)$db->lastInsertId();
+        $newId = (int)$db->lastInsertId('staff_id_seq');
 
         // Sync branch and module assignments
         if (is_array($branches)) syncBranches($db, $newId, $branches);

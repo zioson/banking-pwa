@@ -30,8 +30,8 @@ function ensureDocumentColumns(PDO $db): void {
     // ── Column renames (schema drift from older SQL dumps) ──
     try {
         $cols = [];
-        foreach ($db->query("SELECT column_name AS Field, data_type AS Type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'generated_documents' ORDER BY ordinal_position")->fetchAll(PDO::FETCH_ASSOC) as $c) {
-            $cols[strtolower($c['Field'])] = true;
+        foreach ($db->query("SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'generated_documents' ORDER BY ordinal_position")->fetchAll(PDO::FETCH_ASSOC) as $c) {
+            $cols[strtolower($c['column_name'])] = true;
         }
         // generated_at → created_at
         if (isset($cols['generated_at']) && !isset($cols['created_at'])) {
@@ -74,16 +74,16 @@ function ensureDocumentColumns(PDO $db): void {
 
     // ── Fix restrictive ENUMs to VARCHAR ──
     try {
-        $col = $db->query("SELECT column_name, data_type AS Type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'generated_documents' AND column_name = 'type'")->fetch();
-        if ($col && str_contains($col['Type'], 'enum(')) {
+        $col = $db->query("SELECT data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'generated_documents' AND column_name = 'type'")->fetch(PDO::FETCH_ASSOC);
+        if ($col && str_contains(strtolower($col['data_type']), 'enum')) {
             $db->exec('ALTER TABLE "generated_documents" ALTER COLUMN "type" TYPE VARCHAR(20)');
         }
     } catch (PDOException $e) {
         error_log("[Schema] Document type ENUM fix failed: " . $e->getMessage());
     }
     try {
-        $col = $db->query("SELECT column_name, data_type AS Type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'generated_documents' AND column_name = 'status'")->fetch();
-        if ($col && str_contains($col['Type'], 'enum(')) {
+        $col = $db->query("SELECT data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'generated_documents' AND column_name = 'status'")->fetch(PDO::FETCH_ASSOC);
+        if ($col && str_contains(strtolower($col['data_type']), 'enum')) {
             $db->exec('ALTER TABLE "generated_documents" ALTER COLUMN "status" TYPE VARCHAR(20)');
         }
     } catch (PDOException $e) {
@@ -230,8 +230,8 @@ switch ($method) {
                     ':by' => $staff['id'], ':byname' => $staff['full_name'],
                     ':summary' => $summaryJson
                 ]);
-                logAudit($staff['full_name'], 'DOCUMENT_GENERATE', 'DOCUMENT', (string)$db->lastInsertId(), 'SUCCESS', 'Generated document ' . $docNum, $staff['department'], getClientIp());
-                createdResponse(['id' => (int)$db->lastInsertId(), 'document_number' => $docNum], 'Document generated successfully.');
+                logAudit($staff['full_name'], 'DOCUMENT_GENERATE', 'DOCUMENT', (string)$db->lastInsertId('documents_id_seq'), 'SUCCESS', 'Generated document ' . $docNum, $staff['department'], getClientIp());
+                createdResponse(['id' => (int)$db->lastInsertId('documents_id_seq'), 'document_number' => $docNum], 'Document generated successfully.');
             }
         } catch (PDOException $e) {
             error_log('[Documents POST] PDO error: ' . $e->getMessage());

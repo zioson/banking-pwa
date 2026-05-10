@@ -362,7 +362,7 @@ switch ($method) {
                 ':next_action' => sanitize($input['next_action'] ?? ''),
                 ':notes'  => sanitize($input['notes'] ?? ''),
             ]);
-            $newId = (int)$db->lastInsertId();
+            $newId = (int)$db->lastInsertId('customers_id_seq');
 
             // ── Save requested products ──
             $rawProducts = is_array($input['products'] ?? null) ? $input['products'] : [];

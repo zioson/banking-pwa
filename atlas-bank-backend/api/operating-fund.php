@@ -118,7 +118,7 @@ function ensureChartOfAccounts(PDO $db): void {
             account_name VARCHAR(200) NOT NULL,
             account_type VARCHAR(20) NOT NULL,
             description TEXT,
-            is_active BOOLEAN DEFAULT 1,
+            is_active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE (account_code)
         )");
@@ -472,7 +472,7 @@ switch ($method) {
                     . ' [GL: DR 1400 + CR 3100]',
                     $staff['department'], getClientIp());
                 createdResponse([
-                    'id' => (int)$db->lastInsertId(),
+                    'id' => (int)$db->lastInsertId('operating_account_transactions_id_seq'),
                     'ref' => $ref,
                     'balance' => $opBalance,
                     'gl_1400_balance' => $newBalance,
@@ -579,7 +579,7 @@ switch ($method) {
                     . ' [GL: CR 1400 + DR 5900]',
                     $staff['department'], getClientIp());
                 createdResponse([
-                    'id' => (int)$db->lastInsertId(),
+                    'id' => (int)$db->lastInsertId('operating_account_transactions_id_seq'),
                     'ref' => $ref,
                     'balance' => $newOpBalance,
                     'gl_1400_balance' => $newGLBalance,
@@ -685,7 +685,7 @@ switch ($method) {
                     . ' [GL: DR ' . $toGl . ' + CR 1400]',
                     $staff['department'], getClientIp());
                 createdResponse([
-                    'id' => (int)$db->lastInsertId(),
+                    'id' => (int)$db->lastInsertId('operating_account_transactions_id_seq'),
                     'ref' => $ref,
                     'balance' => $newOpBalance,
                     'gl_1400_balance' => $newGLBalance,
