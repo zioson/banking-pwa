@@ -66,7 +66,7 @@ switch ($method) {
                 // ★ FIX (ACC-011): Apply branch isolation to single-account GET
                 // Prevents staff from viewing account details of customers in other branches.
                 $role = strtoupper((string)($staff['role'] ?? ''));
-                if (!in_array($role, ['ADMIN', 'SUPER_ADMIN'], true)) {
+                if ($role !== 'ADMIN') {
                     $staffBranchesRaw = $staff['branches'] ?? [];
                     if (is_string($staffBranchesRaw)) {
                         $staffBranchesRaw = [$staffBranchesRaw];
