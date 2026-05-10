@@ -226,6 +226,12 @@ function hasRole($roles, array $staff): bool
  */
 function hasBranchAccess(string $branchName, array $staff): bool
 {
+    // ★ FIXED: Admin and SUPER_ADMIN always have access to all branches
+    $roleUpper = strtoupper((string)($staff['role'] ?? ''));
+    if (in_array($roleUpper, ['ADMIN', 'SUPER_ADMIN'], true)) {
+        return true;
+    }
+
     $branches = $staff['branches'] ?? [];
     $branchName = strtoupper(trim($branchName));
     if ($branchName === '') {
